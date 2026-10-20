@@ -60,11 +60,12 @@ detetar desequilíbrio na ocupação das estações
 
 | User story | Descrição | Componentes envolvidos |
 |---|---|---|
-| US-1 | Como assinante, desbloqueio e devolvo uma bicicleta e a viagem fica registada e cobrada. | Desbloqueio, Viagens, Tarifação, Cobrança |
+| US-1 | Como assinante, desbloqueio e devolvo uma bicicleta e a viagem fica registada e cobrada. | Desbloqueio, Comunicação das Docas, Viagens, Tarifação, Cobrança |
 | US-2 | Como técnico, recebo uma ordem de manutenção quando uma bicicleta reporta avaria. | Telemetria, Manutenção |
 | US-3 | Como doca sem rede, reenvio os eventos guardados quando a rede volta, sem duplicar viagens. | Comunicação das Docas, Viagens |
+| US-4 | Como gestor municipal, obtenho o relatório de utilização por freguesia. | Relatórios Municipais |
 
-## 4. Componentes iniciais e responsabilidades
+## 4. Componentes lógicos    e responsabilidades
 
 - **Desbloqueio** — valida e executa o desbloqueio de uma bicicleta.
 - **Viagens** — regista e mantém o estado da viagem de um utilizador.
@@ -75,7 +76,7 @@ detetar desequilíbrio na ocupação das estações
 - **Relatórios Municipais** — agrega os dados necessários e produz o relatório mensal para a Câmara.
 - **Telemetria** — recebe e processa a telemetria enviada pelas bicicletas elétricas.
 - **Histórico de Viagens** — disponibiliza ao utilizador o histórico das viagens realizadas.
-- **Faturação** — gera e disponibiliza as faturas associadas às viagens.
+- **Faturação** — gera e disponibiliza as faturas associadas às viagens, com os dados da viagem e da cobrança.
 - **Comunicação das Docas** — gere a comunicação com as docas e recebe os eventos enviados por estas.
 - **Redistribuição** — analisa o desequilíbrio na ocupação das estações e sugere rotas às carrinhas para redistribuir bicicletas.
 
@@ -92,12 +93,6 @@ Da mesma forma, Comunicação das Docas, Telemetria, Consulta de Estações e Re
 A decomposição não foi feita apenas com base nas entidades do domínio, mas sim nos workflows e responsabilidades do sistema, evitando assim a Entity Trap.
 
 ## 6. Acoplamento estático e instabilidade
-
-A instabilidade é calculada através de:
-
-I = CE / (CA + CE)
-
-## 7. Acoplamento estático e instabilidade
 
 A instabilidade é calculada através de:
 
@@ -120,7 +115,7 @@ I = CE / (CA + CE)
 
 Valores próximos de 0 indicam componentes mais estáveis, enquanto valores próximos de 1 indicam componentes mais instáveis.
 
-## 8. Acoplamento temporal
+## 7. Acoplamento temporal
 
 ### Exemplo 1 — Devolução da bicicleta
 
@@ -130,13 +125,13 @@ A confirmação de encaixe da doca tem de ser recebida antes de a viagem poder s
 
 A viagem tem de estar fechada antes de a tarifa poder ser calculada, e a tarifa tem de ser calculada antes de a cobrança ser efetuada.
 
-## 9. Conascência
+## 8. Conascência
 
 Existe conascência entre os componentes **Tarifação** e **Cobrança**, porque a Cobrança depende da informação produzida pela Tarifação para processar o pagamento.
 
 Os dois componentes têm de concordar sobre a representação do valor a cobrar, nomeadamente a moeda, o arredondamento e o montante associado à viagem. Uma alteração nesse contrato pode obrigar a alterações em ambos os componentes.
 
-## 10. Iteração de reestruturação
+## 9. Iteração de reestruturação
 
 Na decomposição inicial, os eventos enviados pelas docas não tinham um componente próprio.
 
@@ -145,3 +140,11 @@ Durante o mapeamento da US-3, verificou-se que a responsabilidade de receber e g
 Por esse motivo, foi criado o componente **Comunicação das Docas**, responsável por gerir a comunicação com as docas e receber os eventos enviados por estas.
 
 Esta alteração melhorou a separação de responsabilidades e evitou sobrecarregar os componentes Telemetria e Viagens.
+
+## 10. Lei de Deméter
+
+A arquitetura procura limitar o conhecimento entre componentes, fazendo com que cada componente interaja apenas com aqueles de que necessita diretamente.
+
+Por exemplo, o componente Desbloqueio comunica com Comunicação das Docas para executar o desbloqueio, não conhecendo diretamente o componente Viagens. Depois da confirmação da doca, Comunicação das Docas informa Viagens para iniciar a viagem.
+
+Desta forma, Desbloqueio não precisa de conhecer componentes que não são diretamente necessários à sua responsabilidade, reduzindo o acoplamento.
