@@ -28,38 +28,47 @@ Esta opção facilita a organização dos componentes por área funcional e torn
 
 ## 3. Regras allowed-to-use
 
-As dependências dentro do mesmo domínio são permitidas.
+As dependências dentro do mesmo domínio são permitidas quando correspondem às responsabilidades definidas na vista de componentes.
 
 As dependências entre domínios são restritas às seguintes relações:
 
-- Operação de Viagens pode usar Operação de Estações.
-- Operação de Estações pode usar Operação de Viagens.
-- Reporting Municipal pode usar Operação de Viagens.
-- Manutenção da Frota não depende dos restantes domínios.
+- **Operação de Viagens** pode usar **Operação de Estações**, nomeadamente para obter informação relacionada com docas, levantamento e devolução de bicicletas.
+- **Operação de Estações** pode usar **Operação de Viagens**, quando necessita de informação sobre utilização das estações para apoiar a redistribuição.
+- **Reporting Municipal** pode usar **Operação de Viagens**, para obter dados necessários à produção de relatórios.
+- **Manutenção da Frota** não depende funcionalmente dos restantes domínios.
 
-Qualquer outra dependência entre domínios não é permitida.
+Não são permitidas outras dependências entre domínios.
 
+Adicionalmente:
+
+- **Reporting Municipal** apenas consome informação e não deve ser usado pelos restantes domínios.
+- As dependências devem seguir as responsabilidades definidas para cada componente, evitando acessos diretos desnecessários entre componentes.
+- A comunicação assíncrona através do broker não altera estas regras de dependência lógica; apenas muda o mecanismo de comunicação.
 ## 4. Vista de Componentes e Conectores
 
-A vista de componentes e conectores representa as principais interações entre os componentes durante a execução do sistema.
+A vista de componentes e conectores representa o fluxo principal **desbloquear → devolver → cobrar**.
 
-Foram distinguidas comunicações síncronas, usadas quando é necessária uma resposta imediata, e comunicações assíncronas, usadas quando o processamento pode ocorrer sem bloquear o fluxo principal.
+```mermaid
+flowchart LR
+    D[Desbloqueio] --> CD[Comunicação das Docas]
+    CD --> V[Viagens]
+    V --> T[Tarifação]
+    T --> C[Cobrança]
 
-O componente **Desbloqueio** comunica de forma síncrona com **Comunicação das Docas**, uma vez que o utilizador precisa de saber imediatamente se a bicicleta foi desbloqueada com sucesso.
+    CD -->|confirma devolução| V
+```
 
-Após a confirmação física do desbloqueio, **Comunicação das Docas** pode emitir um evento que permite ao componente **Viagens** iniciar a viagem.
+### Legenda
 
-Quando uma viagem termina, **Viagens** comunica com **Tarifação** para calcular o respetivo valor. **Tarifação** comunica depois com **Cobrança**, que executa o pagamento quando aplicável.
+As comunicações representadas neste fluxo são **síncronas (request/response)**, uma vez que cada passo depende diretamente da conclusão do anterior.
 
-Após uma cobrança bem-sucedida, pode ser emitido um evento para **Faturação**, permitindo gerar a respetiva fatura sem bloquear o fluxo principal da viagem.
+- **Desbloqueio → Comunicação das Docas**: é enviado o pedido de desbloqueio e o utilizador necessita de uma resposta imediata.
+- **Comunicação das Docas → Viagens**: após a confirmação do desbloqueio físico da bicicleta, é iniciada a viagem.
+- **Comunicação das Docas → Viagens (devolução)**: a doca confirma a devolução da bicicleta e a viagem é terminada.
+- **Viagens → Tarifação**: após o fim da viagem, é calculado o valor a pagar.
+- **Tarifação → Cobrança**: o valor calculado é enviado para processamento da cobrança.
 
-O componente **Viagens** envia também informação para **Histórico de Viagens**, preferencialmente de forma assíncrona, de modo a que o registo histórico não aumente o tempo necessário para concluir uma viagem.
-
-A informação proveniente das docas é utilizada por **Consulta de Estações** para manter atualizado o número de bicicletas e lugares disponíveis. Esta informação, juntamente com dados de utilização provenientes de **Viagens**, é usada por **Redistribuição** para apoiar decisões de movimentação de bicicletas entre estações.
-
-O componente **Telemetria** envia dados de forma assíncrona para **Manutenção**, uma vez que a recolha frequente de informação das bicicletas elétricas não deve bloquear a operação normal do sistema.
-
-Por fim, **Relatórios Municipais** utiliza dados agregados provenientes de **Viagens**, podendo este processamento ser realizado de forma assíncrona ou periódica, uma vez que não pertence ao caminho crítico da operação do serviço.
+Optou-se por comunicação síncrona neste fluxo por se tratar do caminho principal da operação, em que existe dependência direta entre os passos e necessidade de consistência imediata.
 
 ## 5. Vista de Alocação
 
@@ -105,3 +114,24 @@ As principais decisões tomadas foram:
 - manter as comunicações síncronas apenas nos fluxos em que é necessária uma resposta imediata.
 
 Esta solução procura equilibrar separação de responsabilidades, simplicidade operacional e capacidade de evolução futura, evitando introduzir complexidade distribuída sem uma necessidade clara.
+
+### Responsabilidade pelos componentes
+
+A responsabilidade pelos componentes foi distribuída por domínio, de forma a manter cada elemento do grupo responsável por conjuntos funcionais coerentes.
+
+| Domínio | Componente | Responsável |
+|---|---|---|
+| Operação de Viagens | Desbloqueio | Matilde |
+| Operação de Viagens | Viagens | Matilde |
+| Operação de Viagens | Tarifação | Matilde |
+| Operação de Viagens | Cobrança | Matilde |
+| Operação de Viagens | Histórico de Viagens | Matilde |
+| Operação de Viagens | Faturação | Matilde |
+| Reporting Municipal | Relatórios Municipais | Matilde |
+| Operação de Estações | Comunicação das Docas | João |
+| Operação de Estações | Consulta de Estações | João |
+| Operação de Estações | Redistribuição | João |
+| Manutenção da Frota | Telemetria | João |
+| Manutenção da Frota | Manutenção | João |
+
+Esta distribuição segue o particionamento por domínio e evita que a responsabilidade sobre componentes fortemente relacionados fique fragmentada entre os elementos do grupo.
