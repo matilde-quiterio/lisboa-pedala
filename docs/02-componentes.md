@@ -80,6 +80,10 @@ detetar desequilíbrio na ocupação das estações
 - **Comunicação das Docas** — gere a comunicação com as docas e recebe os eventos enviados por estas.
 - **Redistribuição** — analisa o desequilíbrio na ocupação das estações e sugere rotas às carrinhas para redistribuir bicicletas.
 
+desbloqueio, viagens, tarifaçao, cobrança, historico de viagens
+consulta de estaçoes, comunicaçao das docas, redistribuiçao
+manutençao
+relatorios, telemetria, faturaçao
 ## 5. Análise de coesão
 
 De forma geral, os componentes definidos apresentam boa coesão, uma vez que cada um concentra responsabilidades relacionadas com uma função específica do sistema.
@@ -133,13 +137,19 @@ Os dois componentes têm de concordar sobre a representação do valor a cobrar,
 
 ## 9. Iteração de reestruturação
 
-Na decomposição inicial, os eventos enviados pelas docas não tinham um componente próprio.
+## 9. Iteração de reestruturação
 
-Durante o mapeamento da US-3, verificou-se que a responsabilidade de receber e gerir os eventos das docas não pertencia ao componente Telemetria, que trata apenas dos dados enviados pelas bicicletas elétricas, nem ao componente Viagens.
+Na decomposição inicial, os eventos enviados pelas docas não tinham um componente próprio e várias dependências entre componentes ainda não estavam definidas.
 
-Por esse motivo, foi criado o componente **Comunicação das Docas**, responsável por gerir a comunicação com as docas e receber os eventos enviados por estas.
+Durante o mapeamento das user stories e a análise dos fluxos, verificou-se que a responsabilidade de receber e gerir eventos das docas não pertencia ao componente Telemetria, que trata os dados enviados pelas bicicletas elétricas, nem ao componente Viagens.
 
-Esta alteração melhorou a separação de responsabilidades e evitou sobrecarregar os componentes Telemetria e Viagens.
+Por esse motivo, foi criado o componente **Comunicação das Docas**, responsável pela interação com as docas e pela receção dos respetivos eventos.
+
+A análise permitiu também clarificar várias dependências entre componentes. Por exemplo, Desbloqueio passou a depender de Comunicação das Docas para executar o desbloqueio, enquanto Comunicação das Docas passou a comunicar com Viagens para iniciar ou fechar viagens e com Consulta de Estações para atualizar a ocupação das estações.
+
+Da mesma forma, foram explicitadas outras dependências, como Tarifação → Viagens, Cobrança → Tarifação, Telemetria → Manutenção e Faturação → Viagens e Cobrança.
+
+Esta iteração permitiu tornar mais claras as responsabilidades de cada componente e as relações entre eles, reduzindo ambiguidade e preparando a arquitetura para a análise de acoplamento e para as regras de dependência.
 
 ## 10. Lei de Deméter
 
