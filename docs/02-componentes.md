@@ -27,6 +27,7 @@ pedir desbloqueio pela app através de QR ou com o cartão Navegante
 → fechar viagem
 → calcular tarifa
 → cobrar, se aplicável
+→ emitir fatura, se aplicável
 
 ### Workflow 3 — Processar telemetria
 
@@ -78,7 +79,7 @@ detetar desequilíbrio na ocupação das estações
 
 - **Utilizadores** — gere a identificação dos utilizadores e os dados da conta necessários ao acesso e à tarifação.
 - **Desbloqueio** — valida e executa o desbloqueio de uma bicicleta.
-- **Viagens** — regista e mantém o estado da viagem de um utilizador.
+- **Viagens** — regista e mantém o estado da viagem de um utilizador, e, após o fecho, desencadeia o cálculo da tarifa e a cobrança, se aplicável.
 - **Tarifação** — calcula a tarifa aplicável a uma viagem.
 - **Cobrança** — processa a cobrança ao utilizador.
 - **Manutenção** — recebe reportes de avaria e cria ordens de manutenção para os técnicos.
@@ -87,7 +88,7 @@ detetar desequilíbrio na ocupação das estações
 - **Telemetria** — recebe e processa a telemetria enviada pelas bicicletas elétricas.
 - **Histórico de Viagens** — disponibiliza ao utilizador o histórico das viagens realizadas.
 - **Faturação** — gera e disponibiliza as faturas associadas às viagens, com os dados da viagem e da cobrança.
-- **Comunicação das Docas** — gere a comunicação com as docas e recebe os eventos enviados por estas.
+- **Comunicação das Docas** — gere o envio de comandos e a receção de eventos das docas, encaminhando-os para os componentes responsáveis.
 - **Redistribuição** — analisa o desequilíbrio na ocupação das estações e sugere rotas às carrinhas para redistribuir bicicletas.
 
 ## 5. Análise de coesão
@@ -122,7 +123,8 @@ As dependências consideradas são:
 - Comunicação das Docas → Viagens
 - Comunicação das Docas → Consulta de Estações
 - Viagens → Tarifação
-- Tarifação → Cobrança
+- Viagens → Cobrança
+- Tarifação → Utilizadores
 - Telemetria → Manutenção
 - Redistribuição → Consulta de Estações
 - Redistribuição → Viagens
@@ -189,12 +191,18 @@ A análise do acesso por app ou cartão Navegante e da tarifação para assinant
 
 Foi criado o componente **Utilizadores** para concentrar a identificação e os dados da conta necessários ao acesso e à tarifação. Desbloqueio e Tarifação passam a consultar este componente, evitando duplicar esse conhecimento.
 
+#### Coordenação da tarifação e cobrança
+
+Na versão anterior, Tarifação calculava o preço e desencadeava a cobrança. Esta coordenação passou para Viagens, que, após fechar a viagem, solicita o cálculo a Tarifação e, caso o valor seja superior a zero, solicita o pagamento a Cobrança. A coordenação foi atribuída a Viagens porque estas operações integram o processo de conclusão de uma viagem, enquanto a responsabilidade de Tarifação é calcular o preço.
+
+Foi substituída a dependência Tarifação → Cobrança por Viagens → Cobrança. Esta alteração melhora a coesão de Tarifação, que fica responsável apenas pelo cálculo do preço. Como trade-off, Viagens passa a ter mais uma dependência direta e assume a coordenação destas duas operações.
+
 ## 10. Lei de Deméter
 
 A arquitetura procura limitar o conhecimento entre componentes, fazendo com que cada componente interaja apenas com aqueles de que necessita diretamente.
 
 Por exemplo, o componente Desbloqueio comunica com Comunicação das Docas para executar o desbloqueio, não conhecendo diretamente o componente Viagens. Depois da confirmação da doca, Comunicação das Docas informa Viagens para iniciar a viagem.
 
-Da mesma forma, Viagens não precisa de conhecer diretamente o mecanismo de cobrança. Viagens solicita o cálculo a Tarifação e é Tarifação que desencadeia a Cobrança.
+Da mesma forma, Viagens interage diretamente com Tarifação para obter o valor a pagar e com Cobrança para executar o pagamento quando o valor é superior a zero. Ambos são colaboradores diretos, sem ser necessário aceder à estrutura interna de um para chegar ao outro.
 
 Desta forma, cada componente conhece apenas os colaboradores diretamente necessários à sua responsabilidade, reduzindo o acoplamento.
