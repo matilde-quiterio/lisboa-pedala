@@ -10,47 +10,56 @@ No Lisboa Pedala, esta abordagem ajuda a perceber a sequência completa das oper
 
 ## 2. Workflows principais
 
-### Workflow 1 — Realizar uma viagem
+### Workflow  1 — Associar cartão Navegante 
 
-desbloquear bicicleta  
-→ iniciar viagem  
-→ devolver bicicleta  
-→ fechar viagem  
-→ calcular tarifa  
+utilizador autenticado solicita associação do cartão
+→ sistema obtém o identificador do cartão
+→ verifica se já está associado a outra conta
+→ associa o cartão à conta do utilizador
+
+### Workflow 2 — Realizar uma viagem
+
+pedir desbloqueio pela app através de QR ou com o cartão Navegante
+→ identificar e validar utilizador
+→ desbloquear bicicleta
+→ iniciar viagem
+→ devolver bicicleta
+→ fechar viagem
+→ calcular tarifa
 → cobrar, se aplicável
 
-### Workflow 2 — Processar telemetria
+### Workflow 3 — Processar telemetria
 
 bicicleta elétrica envia telemetria  
 → sistema recebe dados  
 → atualiza estado da bicicleta
 
-### Workflow 3 — Tratar manutenção
+### Workflow 4 — Tratar manutenção
 
 receber reporte de avaria  
 → abrir ordem de manutenção  
 → disponibilizar ordem ao técnico
 
-### Workflow 4 — Consultar estado das estações
+### Workflow 5 — Consultar estado das estações
 
 abrir aplicação  
 → consultar mapa em tempo real  
 → visualizar bicicletas disponíveis e docas livres por estação
 
-### Workflow 5 — Gerar relatório municipal
+### Workflow 6 — Gerar relatório municipal
 
 chegar ao fim do período mensal  
 → agregar dados de utilização  
 → calcular indicadores por freguesia  
 → produzir relatório para a Câmara
 
-### Workflow 6 — Consultar histórico e faturas
+### Workflow 7 — Consultar histórico e faturas
 
 abrir aplicação  
 → consultar histórico de viagens  
 → consultar faturas
 
-### Workflow 7 — Redistribuir bicicletas
+### Workflow 8 — Redistribuir bicicletas
 
 detetar desequilíbrio na ocupação das estações  
 → sugerir rota às carrinhas de redistribuição  
@@ -60,13 +69,14 @@ detetar desequilíbrio na ocupação das estações
 
 | User story | Descrição | Componentes envolvidos |
 |---|---|---|
-| US-1 | Como assinante, desbloqueio e devolvo uma bicicleta e a viagem fica registada e cobrada. | Desbloqueio, Comunicação das Docas, Viagens, Tarifação, Cobrança |
+| US-1 | Como assinante, desbloqueio e devolvo uma bicicleta e a viagem fica registada e cobrada. | Utilizadores, Desbloqueio, Comunicação das Docas, Viagens, Tarifação, Cobrança |
 | US-2 | Como técnico, recebo uma ordem de manutenção quando uma bicicleta reporta avaria. | Telemetria, Manutenção |
 | US-3 | Como doca sem rede, reenvio os eventos guardados quando a rede volta, sem duplicar viagens. | Comunicação das Docas, Viagens |
 | US-4 | Como gestor municipal, obtenho o relatório de utilização por freguesia. | Relatórios Municipais, Viagens |
 
 ## 4. Componentes lógicos e responsabilidades
 
+- **Utilizadores** — gere a identificação dos utilizadores e os dados da conta necessários ao acesso e à tarifação.
 - **Desbloqueio** — valida e executa o desbloqueio de uma bicicleta.
 - **Viagens** — regista e mantém o estado da viagem de um utilizador.
 - **Tarifação** — calcula a tarifa aplicável a uma viagem.
@@ -90,6 +100,8 @@ A separação entre componentes como Viagens, Tarifação, Cobrança, Faturaçã
 
 Da mesma forma, Comunicação das Docas, Telemetria, Consulta de Estações e Redistribuição têm responsabilidades distintas, apesar de trabalharem sobre informação relacionada com bicicletas e estações.
 
+Utilizadores reúne a identificação e os dados da conta necessários ao acesso e à tarifação. Estas responsabilidades estão relacionadas com a conta do utilizador, enquanto o desbloqueio e o cálculo da tarifa permanecem nos componentes próprios.
+
 A decomposição não foi feita apenas com base nas entidades do domínio, mas sim nos workflows e responsabilidades do sistema, evitando assim a Entity Trap.
 
 ## 6. Acoplamento estático e instabilidade
@@ -105,6 +117,7 @@ onde:
 
 As dependências consideradas são:
 
+- Desbloqueio → Utilizadores
 - Desbloqueio → Comunicação das Docas
 - Comunicação das Docas → Viagens
 - Comunicação das Docas → Consulta de Estações
@@ -120,9 +133,10 @@ As dependências consideradas são:
 
 | Componente | Depende de | CA | CE | Instabilidade |
 |---|---|---:|---:|---:|
-| Desbloqueio | Comunicação das Docas | 0 | 1 | 1 |
+| Utilizadores | — | 2 | 0 | 0 |
+| Desbloqueio | Comunicação das Docas, Utilizadores | 0 | 2 | 1 |
 | Viagens | Tarifação | 5 | 1 | 0,17 |
-| Tarifação | Cobrança | 1 | 1 | 0,5 |
+| Tarifação | Cobrança, Utilizadores | 1 | 2 | 0,67 |
 | Cobrança | — | 2 | 0 | 0 |
 | Telemetria | Manutenção | 0 | 1 | 1 |
 | Manutenção | — | 1 | 0 | 0 |
@@ -166,6 +180,14 @@ No fluxo principal, Viagens desencadeia o cálculo da tarifa através de Tarifa�
 Foram também explicitadas outras dependências, como Telemetria → Manutenção, Redistribuição → Consulta de Estações e Viagens, Histórico de Viagens → Viagens, Faturação → Viagens e Cobrança, e Relatórios Municipais → Viagens.
 
 Esta iteração permitiu tornar mais claras as responsabilidades de cada componente e as relações entre eles, reduzindo ambiguidade e preparando a arquitetura para as regras de dependência.
+
+### Revisão da decomposição
+
+#### Utilizadores
+
+A análise do acesso por app ou cartão Navegante e da tarifação para assinantes e ocasionais revelou uma responsabilidade ainda não atribuída explicitamente.
+
+Foi criado o componente **Utilizadores** para concentrar a identificação e os dados da conta necessários ao acesso e à tarifação. Desbloqueio e Tarifação passam a consultar este componente, evitando duplicar esse conhecimento.
 
 ## 10. Lei de Deméter
 
