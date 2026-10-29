@@ -65,9 +65,11 @@ abrir aplicação
 
 ### Workflow 8 — Redistribuir bicicletas
 
-detetar desequilíbrio na ocupação das estações  
-→ sugerir rota às carrinhas de redistribuição  
-→ equilibrar a ocupação das estações
+detetar desequilíbrio na ocupação das estações que ultrapasse o limiar configurado
+→ calcular as quantidades de bicicletas a recolher e entregar em cada estação
+→ planear as rotas das carrinhas de redistribuição
+→ disponibilizar o plano às equipas de redistribuição
+→ equipas executam as recolhas e entregas
 
 ## 3. Mapeamento das user stories para componentes
 
@@ -92,7 +94,8 @@ detetar desequilíbrio na ocupação das estações
 - **Histórico de Viagens** — disponibiliza ao utilizador o histórico das viagens realizadas.
 - **Faturação** — gera e disponibiliza as faturas associadas às viagens, com os dados da viagem e da cobrança.
 - **Comunicação das Docas** — gere o envio de comandos e a receção de eventos das docas, encaminhando-os para os componentes responsáveis.
-- **Redistribuição** — analisa o desequilíbrio na ocupação das estações e sugere rotas às carrinhas para redistribuir bicicletas.
+- **Planeamento de Redistribuição** — analisa a ocupação das estações e, quando o desequilíbrio ultrapassa o limiar configurado, calcula as quantidades de bicicletas a recolher e entregar em cada estação.
+- **Planeamento de Rotas** — calcula e disponibiliza às equipas as rotas para executar as recolhas e entregas previstas no plano de redistribuição.
 
 ## 5. Análise de coesão
 
@@ -102,7 +105,7 @@ Por exemplo, Desbloqueio trata apenas do processo de desbloqueio, Viagens concen
 
 A separação entre componentes como Viagens, Tarifação, Cobrança, Faturação e Histórico de Viagens evita concentrar responsabilidades distintas num único componente, reduzindo o risco de baixa coesão.
 
-Da mesma forma, Comunicação das Docas, Telemetria, Consulta de Estações e Redistribuição têm responsabilidades distintas, apesar de trabalharem sobre informação relacionada com bicicletas e estações.
+Da mesma forma, Comunicação das Docas, Telemetria, Consulta de Estações, Planeamento de Redistribuição e Planeamento de Rotas têm responsabilidades distintas, apesar de trabalharem sobre informação relacionada com bicicletas e estações.
 
 Utilizadores reúne a identificação e os dados da conta necessários ao acesso e à tarifação. Estas responsabilidades estão relacionadas com a conta do utilizador, enquanto o desbloqueio e o cálculo da tarifa permanecem nos componentes próprios.
 
@@ -129,8 +132,8 @@ As dependências consideradas são:
 - Viagens → Cobrança
 - Tarifação → Utilizadores
 - Telemetria → Manutenção
-- Redistribuição → Consulta de Estações
-- Redistribuição → Viagens
+- Planeamento de Redistribuição → Consulta de Estações
+- Planeamento de Redistribuição → Planeamento de Rotas
 - Histórico de Viagens → Viagens
 - Faturação → Cobrança
 - Faturação → Viagens
@@ -140,14 +143,15 @@ As dependências consideradas são:
 |---|---|---:|---:|---:|
 | Utilizadores | — | 2 | 0 | 0 |
 | Desbloqueio | Comunicação das Docas, Utilizadores | 0 | 2 | 1 |
-| Viagens | Tarifação | 5 | 1 | 0,17 |
-| Tarifação | Cobrança, Utilizadores | 1 | 2 | 0,67 |
+| Viagens | Tarifação, Cobrança | 4 | 2 | 0,33 |
+| Tarifação | Utilizadores | 1 | 1 | 0,5 |
 | Cobrança | — | 2 | 0 | 0 |
 | Telemetria | Manutenção | 0 | 1 | 1 |
 | Manutenção | — | 1 | 0 | 0 |
 | Comunicação das Docas | Viagens, Consulta de Estações | 1 | 2 | 0,67 |
 | Consulta de Estações | — | 2 | 0 | 0 |
-| Redistribuição | Consulta de Estações, Viagens | 0 | 2 | 1 |
+| Planeamento de Redistribuição | Consulta de Estações, Planeamento de Rotas | 0 | 2 | 1 |
+| Planeamento de Rotas | — | 1 | 0 | 0 |
 | Histórico de Viagens | Viagens | 0 | 1 | 1 |
 | Faturação | Cobrança, Viagens | 0 | 2 | 1 |
 | Relatórios Municipais | Viagens | 0 | 1 | 1 |
@@ -166,9 +170,9 @@ A viagem tem de estar fechada antes de a tarifa poder ser calculada, e a tarifa 
 
 ## 8. Conascência
 
-Existe conascência entre os componentes **Tarifação** e **Cobrança**, porque a Cobrança utiliza a informação produzida pela Tarifação para processar o pagamento.
+Existe conascência entre os componentes **Tarifação** e **Cobrança**, porque a Cobrança utiliza o valor calculado pela Tarifação, recebido através de Viagens.
 
-Os dois componentes têm de concordar sobre a representação do valor a cobrar, nomeadamente a moeda, o arredondamento e o montante associado à viagem. Uma alteração nesse contrato pode obrigar a alterações em ambos os componentes.
+Os dois componentes têm de concordar sobre a representação e o significado desse valor, nomeadamente a moeda e a unidade do montante, como euros ou cêntimos. Uma alteração nesta convenção pode exigir alterações em ambos os componentes, mesmo sem existir uma dependência direta entre eles.
 
 ## 9. Iteração de reestruturação
 
@@ -205,6 +209,12 @@ Foi substituída a dependência Tarifação → Cobrança por Viagens → Cobran
 Foi clarificado o workflow de manutenção para distinguir reportes manuais de avarias identificadas pela Telemetria. Definiu-se que as ordens são criadas pendentes de avaliação pelo técnico, que determina a necessidade de intervenção, ficando o resultado registado no fecho.
 
 Estas responsabilidades permanecem no componente Manutenção por integrarem o mesmo processo de tratamento de avarias, sem necessidade de criar um componente adicional ou alterar as dependências existentes.
+
+#### Separação do planeamento de redistribuição e de rotas
+
+Redistribuição foi dividido em Planeamento de Redistribuição, que determina as quantidades a recolher e entregar, e Planeamento de Rotas, que calcula e disponibiliza os percursos. Esta separação permite evoluir os dois cálculos de forma independente, com o trade-off de acrescentar um componente e um contrato entre ambos.
+
+Foi retirada a dependência de Viagens, pois o planeamento adotado utiliza apenas a ocupação disponibilizada por Consulta de Estações, sem antecipar a procura através do histórico de viagens.
 
 ## 10. Lei de Deméter
 
