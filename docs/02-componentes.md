@@ -37,9 +37,12 @@ bicicleta elétrica envia telemetria
 
 ### Workflow 4 — Tratar manutenção
 
-receber reporte de avaria  
-→ abrir ordem de manutenção  
+receber reporte manual de avaria ou avaria identificada pela telemetria
+→ abrir ordem de manutenção pendente de avaliação
 → disponibilizar ordem ao técnico
+→ técnico avalia a necessidade de intervenção
+→ realizar e registar a intervenção, se necessária
+→ fechar ordem e registar o resultado
 
 ### Workflow 5 — Consultar estado das estações
 
@@ -82,7 +85,7 @@ detetar desequilíbrio na ocupação das estações
 - **Viagens** — regista e mantém o estado da viagem de um utilizador, e, após o fecho, desencadeia o cálculo da tarifa e a cobrança, se aplicável.
 - **Tarifação** — calcula a tarifa aplicável a uma viagem.
 - **Cobrança** — processa a cobrança ao utilizador.
-- **Manutenção** — recebe reportes de avaria e cria ordens de manutenção para os técnicos.
+- **Manutenção** — recebe reportes manuais e avarias identificadas pela Telemetria, cria ordens pendentes de avaliação pelos técnicos e gere o registo das intervenções e o fecho das ordens.
 - **Consulta de Estações** — disponibiliza o estado das estações, incluindo bicicletas disponíveis e docas livres.
 - **Relatórios Municipais** — agrega os dados necessários e produz o relatório mensal para a Câmara.
 - **Telemetria** — recebe e processa a telemetria enviada pelas bicicletas elétricas.
@@ -196,6 +199,12 @@ Foi criado o componente **Utilizadores** para concentrar a identificação e os 
 Na versão anterior, Tarifação calculava o preço e desencadeava a cobrança. Esta coordenação passou para Viagens, que, após fechar a viagem, solicita o cálculo a Tarifação e, caso o valor seja superior a zero, solicita o pagamento a Cobrança. A coordenação foi atribuída a Viagens porque estas operações integram o processo de conclusão de uma viagem, enquanto a responsabilidade de Tarifação é calcular o preço.
 
 Foi substituída a dependência Tarifação → Cobrança por Viagens → Cobrança. Esta alteração melhora a coesão de Tarifação, que fica responsável apenas pelo cálculo do preço. Como trade-off, Viagens passa a ter mais uma dependência direta e assume a coordenação destas duas operações.
+
+#### Tratamento de avarias e ordens de manutenção
+
+Foi clarificado o workflow de manutenção para distinguir reportes manuais de avarias identificadas pela Telemetria. Definiu-se que as ordens são criadas pendentes de avaliação pelo técnico, que determina a necessidade de intervenção, ficando o resultado registado no fecho.
+
+Estas responsabilidades permanecem no componente Manutenção por integrarem o mesmo processo de tratamento de avarias, sem necessidade de criar um componente adicional ou alterar as dependências existentes.
 
 ## 10. Lei de Deméter
 
