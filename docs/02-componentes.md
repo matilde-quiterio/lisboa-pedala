@@ -24,7 +24,7 @@ pedir desbloqueio pela app através de QR ou com o cartão Navegante
 → desbloquear bicicleta
 → iniciar viagem
 → devolver bicicleta
-→ fechar viagem
+→ fechar viagem e guardar os respetivos dados para consulta no histórico
 → calcular tarifa
 → cobrar, se aplicável
 → emitir fatura, se aplicável
@@ -92,7 +92,7 @@ detetar desequilíbrio na ocupação das estações que ultrapasse o limiar conf
 - **Relatórios Municipais** — agrega os dados necessários e produz o relatório mensal para a Câmara.
 - **Telemetria** — recebe e processa a telemetria enviada pelas bicicletas elétricas.
 - **Histórico de Viagens** — disponibiliza ao utilizador o histórico das viagens realizadas.
-- **Faturação** — gera e disponibiliza as faturas associadas às viagens, com os dados da viagem e da cobrança.
+- **Faturação** — gera, guarda e disponibiliza as faturas associadas às viagens, com os dados necessários da viagem e da cobrança.
 - **Comunicação das Docas** — gere o envio de comandos e a receção de eventos das docas, encaminhando-os para os componentes responsáveis.
 - **Planeamento de Redistribuição** — analisa a ocupação das estações e, quando o desequilíbrio ultrapassa o limiar configurado, calcula as quantidades de bicicletas a recolher e entregar em cada estação.
 - **Planeamento de Rotas** — calcula e disponibiliza às equipas as rotas para executar as recolhas e entregas previstas no plano de redistribuição.
@@ -131,21 +131,21 @@ As dependências consideradas são:
 - Viagens → Tarifação
 - Viagens → Cobrança
 - Tarifação → Utilizadores
+- Cobrança → Utilizadores
 - Telemetria → Manutenção
 - Planeamento de Redistribuição → Consulta de Estações
 - Planeamento de Redistribuição → Planeamento de Rotas
 - Histórico de Viagens → Viagens
 - Faturação → Cobrança
 - Faturação → Viagens
-- Relatórios Municipais → Viagens
 
 | Componente | Depende de | CA | CE | Instabilidade |
 |---|---|---:|---:|---:|
-| Utilizadores | — | 2 | 0 | 0 |
+| Utilizadores | — | 3 | 0 | 0 |
 | Desbloqueio | Comunicação das Docas, Utilizadores | 0 | 2 | 1 |
-| Viagens | Tarifação, Cobrança | 4 | 2 | 0,33 |
+| Viagens | Tarifação, Cobrança | 3 | 2 | 0,4 |
 | Tarifação | Utilizadores | 1 | 1 | 0,5 |
-| Cobrança | — | 2 | 0 | 0 |
+| Cobrança | Utilizadores | 2 | 1 | 0,33 |
 | Telemetria | Manutenção | 0 | 1 | 1 |
 | Manutenção | — | 1 | 0 | 0 |
 | Comunicação das Docas | Viagens, Consulta de Estações | 1 | 2 | 0,67 |
@@ -154,9 +154,11 @@ As dependências consideradas são:
 | Planeamento de Rotas | — | 1 | 0 | 0 |
 | Histórico de Viagens | Viagens | 0 | 1 | 1 |
 | Faturação | Cobrança, Viagens | 0 | 2 | 1 |
-| Relatórios Municipais | Viagens | 0 | 1 | 1 |
+| Relatórios Municipais | — | 0 | 0 | N/A |
 
 Valores próximos de 0 indicam componentes mais estáveis, enquanto valores próximos de 1 indicam componentes mais instáveis.
+
+Relatórios Municipais consulta diretamente a base de dados, apenas em leitura, através de queries definidas no próprio componente. Depende, por isso, da estrutura das tabelas consultadas, embora não utilize diretamente o componente Viagens.
 
 ## 7. Acoplamento temporal
 
@@ -215,6 +217,14 @@ Estas responsabilidades permanecem no componente Manutenção por integrarem o m
 Redistribuição foi dividido em Planeamento de Redistribuição, que determina as quantidades a recolher e entregar, e Planeamento de Rotas, que calcula e disponibiliza os percursos. Esta separação permite evoluir os dois cálculos de forma independente, com o trade-off de acrescentar um componente e um contrato entre ambos.
 
 Foi retirada a dependência de Viagens, pois o planeamento adotado utiliza apenas a ocupação disponibilizada por Consulta de Estações, sem antecipar a procura através do histórico de viagens.
+
+#### Acesso ao meio de pagamento
+
+Foi acrescentada a dependência Cobrança → Utilizadores para obter a referência do meio de pagamento associado ao utilizador identificado no pedido enviado por Viagens.
+
+#### Acesso aos dados para relatórios municipais
+
+Foi retirada a dependência Relatórios Municipais → Viagens. As consultas necessárias aos relatórios passam a ser realizadas diretamente na base de dados, apenas em leitura, pelo próprio componente. A decisão e os respetivos trade-offs são documentados num ADR.
 
 ## 10. Lei de Deméter
 
