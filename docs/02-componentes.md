@@ -78,7 +78,7 @@ detetar desequilíbrio na ocupação das estações que ultrapasse o limiar conf
 | US-1 | Como assinante, desbloqueio e devolvo uma bicicleta e a viagem fica registada e cobrada. | Utilizadores, Desbloqueio, Comunicação das Docas, Viagens, Tarifação, Cobrança |
 | US-2 | Como técnico, recebo uma ordem de manutenção quando uma bicicleta reporta avaria. | Telemetria, Manutenção |
 | US-3 | Como doca sem rede, reenvio os eventos guardados quando a rede volta, sem duplicar viagens. | Comunicação das Docas, Viagens |
-| US-4 | Como gestor municipal, obtenho o relatório de utilização por freguesia. | Relatórios Municipais, Viagens |
+| US-4 | Como gestor municipal, obtenho o relatório de utilização por freguesia. | Relatórios Municipais |
 
 ## 4. Componentes lógicos e responsabilidades
 
@@ -178,6 +178,8 @@ Os dois componentes têm de concordar sobre a representação e o significado de
 
 ## 9. Iteração de reestruturação
 
+### Primeira iteração de reestruturação
+
 Na decomposição inicial, os eventos enviados pelas docas não tinham um componente próprio e várias dependências entre componentes ainda não estavam definidas.
 
 Durante o mapeamento das user stories e a análise dos fluxos, verificou-se que a responsabilidade de receber e gerir eventos das docas não pertencia ao componente Telemetria, que trata os dados enviados pelas bicicletas elétricas, nem ao componente Viagens.
@@ -192,7 +194,7 @@ Foram também explicitadas outras dependências, como Telemetria → Manutençã
 
 Esta iteração permitiu tornar mais claras as responsabilidades de cada componente e as relações entre eles, reduzindo ambiguidade e preparando a arquitetura para as regras de dependência.
 
-### Revisão da decomposição
+### Segunda iteração de reestruturação
 
 #### Utilizadores
 

@@ -48,7 +48,7 @@ As dependências entre domínios são restritas às seguintes relações:
 - **Operação de Viagens** pode usar **Operação de Estações**, nomeadamente através da comunicação com as docas necessária ao desbloqueio das bicicletas.
 - **Operação de Estações** pode usar **Operação de Viagens**, nomeadamente quando Comunicação das Docas informa Viagens das confirmações de desbloqueio e devolução.
 - **Redistribuição** pode usar **Operação de Estações** para obter os dados de ocupação necessários ao equilíbrio das estações.
-- - **Reporting Municipal** pode consultar diretamente a base de dados, apenas em leitura, através de queries definidas no próprio componente.
+- **Reporting Municipal** pode consultar diretamente a base de dados, apenas em leitura, através de queries definidas no próprio componente.
 - **Manutenção da Frota** não depende funcionalmente dos restantes domínios.
 
 Não são permitidas outras dependências entre domínios.
