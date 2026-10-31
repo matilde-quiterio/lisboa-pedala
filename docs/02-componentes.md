@@ -220,7 +220,7 @@ Foi retirada a dependência de Viagens, pois o planeamento adotado utiliza apena
 
 #### Acesso ao meio de pagamento
 
-Foi acrescentada a dependência Cobrança → Utilizadores para obter a referência do meio de pagamento associado ao utilizador identificado no pedido enviado por Viagens.
+Foi acrescentada a dependência Cobrança → Utilizadores para obter a referência do cartão associado ao utilizador, quando esse método é escolhido. No pagamento por MB WAY, os dados necessários são fornecidos no pedido de pagamento, sem essa consulta.
 
 #### Acesso aos dados para relatórios municipais
 
