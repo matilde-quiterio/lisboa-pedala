@@ -24,7 +24,7 @@ pedir desbloqueio pela app através de QR ou com o cartão Navegante
 → desbloquear bicicleta
 → iniciar viagem
 → devolver bicicleta
-→ fechar viagem e guardar os respetivos dados para consulta no histórico
+→ fechar viagem e guardar os respetivos dados
 → calcular tarifa
 → cobrar, se aplicável
 → emitir fatura, se aplicável
@@ -84,14 +84,14 @@ detetar desequilíbrio na ocupação das estações que ultrapasse o limiar conf
 
 - **Utilizadores** — gere a identificação dos utilizadores e os dados da conta necessários ao acesso e à tarifação.
 - **Desbloqueio** — valida e executa o desbloqueio de uma bicicleta.
-- **Viagens** — regista e mantém o estado da viagem de um utilizador, e, após o fecho, desencadeia o cálculo da tarifa e a cobrança, se aplicável.
+- **Viagens** — gere o ciclo de vida das viagens, registando o seu início e fecho e coordenando a tarifação, a cobrança e a faturação, quando aplicáveis.
 - **Tarifação** — calcula a tarifa aplicável a uma viagem.
 - **Cobrança** — processa a cobrança ao utilizador.
 - **Manutenção** — recebe reportes manuais e avarias identificadas pela Telemetria, cria ordens pendentes de avaliação pelos técnicos e gere o registo das intervenções e o fecho das ordens.
 - **Consulta de Estações** — disponibiliza o estado das estações, incluindo bicicletas disponíveis e docas livres.
 - **Relatórios Municipais** — agrega os dados necessários e produz o relatório mensal para a Câmara.
 - **Telemetria** — recebe e processa a telemetria enviada pelas bicicletas elétricas.
-- **Histórico de Viagens** — disponibiliza ao utilizador o histórico das viagens realizadas.
+- **Histórico de Viagens** — disponibiliza ao utilizador as suas viagens realizadas, consultando os dados através do componente Viagens
 - **Faturação** — gera, guarda e disponibiliza as faturas associadas às viagens, com os dados necessários da viagem e da cobrança.
 - **Comunicação das Docas** — gere o envio de comandos e a receção de eventos das docas, encaminhando-os para os componentes responsáveis.
 - **Planeamento de Redistribuição** — analisa a ocupação das estações e, quando o desequilíbrio ultrapassa o limiar configurado, calcula as quantidades de bicicletas a recolher e entregar em cada estação.
@@ -130,22 +130,21 @@ As dependências consideradas são:
 - Comunicação das Docas → Consulta de Estações
 - Viagens → Tarifação
 - Viagens → Cobrança
+- Viagens → Faturação
 - Tarifação → Utilizadores
 - Cobrança → Utilizadores
 - Telemetria → Manutenção
 - Planeamento de Redistribuição → Consulta de Estações
 - Planeamento de Redistribuição → Planeamento de Rotas
 - Histórico de Viagens → Viagens
-- Faturação → Cobrança
-- Faturação → Viagens
 
 | Componente | Depende de | CA | CE | Instabilidade |
 |---|---|---:|---:|---:|
 | Utilizadores | — | 3 | 0 | 0 |
 | Desbloqueio | Comunicação das Docas, Utilizadores | 0 | 2 | 1 |
-| Viagens | Tarifação, Cobrança | 3 | 2 | 0,4 |
+| Viagens | Tarifação, Cobrança, Faturação | 2 | 3 | 0,6 |
 | Tarifação | Utilizadores | 1 | 1 | 0,5 |
-| Cobrança | Utilizadores | 2 | 1 | 0,33 |
+| Cobrança | Utilizadores | 1 | 1 | 0,5 |
 | Telemetria | Manutenção | 0 | 1 | 1 |
 | Manutenção | — | 1 | 0 | 0 |
 | Comunicação das Docas | Viagens, Consulta de Estações | 1 | 2 | 0,67 |
@@ -153,10 +152,12 @@ As dependências consideradas são:
 | Planeamento de Redistribuição | Consulta de Estações, Planeamento de Rotas | 0 | 2 | 1 |
 | Planeamento de Rotas | — | 1 | 0 | 0 |
 | Histórico de Viagens | Viagens | 0 | 1 | 1 |
-| Faturação | Cobrança, Viagens | 0 | 2 | 1 |
+| Faturação | — | 1 | 0 | 0 |
 | Relatórios Municipais | — | 0 | 0 | N/A |
 
 Valores próximos de 0 indicam componentes mais estáveis, enquanto valores próximos de 1 indicam componentes mais instáveis.
+
+Faturação recebe de Viagens os dados necessários à emissão da fatura, sem consultar diretamente Viagens ou Cobrança.
 
 Relatórios Municipais consulta diretamente a base de dados, apenas em leitura, através de queries definidas no próprio componente. Depende, por isso, da estrutura das tabelas consultadas, embora não utilize diretamente o componente Viagens.
 
@@ -227,6 +228,14 @@ Foi acrescentada a dependência Cobrança → Utilizadores para obter a referên
 #### Acesso aos dados para relatórios municipais
 
 Foi retirada a dependência Relatórios Municipais → Viagens. As consultas necessárias aos relatórios passam a ser realizadas diretamente na base de dados, apenas em leitura, pelo próprio componente. A decisão e os respetivos trade-offs são documentados num ADR.
+
+#### Coordenação da faturação
+
+Na versão anterior, Faturação dependia de Viagens e Cobrança para obter os dados, mas não estava definido quem desencadeava a emissão.
+
+Essa coordenação foi atribuída a Viagens, que já dispõe dos dados da viagem e recebe o resultado da cobrança. Quando aplicável, solicita a emissão a Faturação, fornecendo os dados necessários. Em comparação com uma cadeia Cobrança → Faturação, evita que Cobrança tenha de encaminhar dados da viagem desnecessários ao processamento do pagamento.
+
+Foi acrescentada a dependência Viagens → Faturação e retiradas Faturação → Viagens e Faturação → Cobrança. Como trade-off, Viagens assume mais uma dependência direta e a coordenação desta operação.
 
 ## 10. Lei de Deméter
 

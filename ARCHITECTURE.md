@@ -10,8 +10,7 @@ A arquitetura lógica é particionada por domínio. Cada componente tem uma resp
 |---|---|---|
 | Utilizadores | Gerir identificação e dados da conta necessários ao acesso e tarifação. | `src.viagens.utilizadores` |
 | Desbloqueio | Validar e executar o desbloqueio de uma bicicleta. | `src.viagens.desbloqueio` |
-| Viagens | Registar e manter o estado das viagens e coordenar a sua conclusão. | `src.viagens.viagens` |
-| Tarifação | Calcular a tarifa aplicável a uma viagem. | `src.viagens.tarifacao` |
+| Viagens | Gerir o ciclo de vida das viagens e coordenar a tarifação, cobrança e faturação, quando aplicáveis. | `src.viagens.viagens` || Tarifação | Calcular a tarifa aplicável a uma viagem. | `src.viagens.tarifacao` |
 | Cobrança | Processar a cobrança ao utilizador. | `src.viagens.cobranca` |
 | Histórico de Viagens | Disponibilizar ao utilizador as viagens realizadas. | `src.viagens.historico` |
 | Faturação | Gerar, guardar e disponibilizar faturas associadas às viagens. | `src.viagens.faturacao` |
@@ -36,14 +35,13 @@ comunicacao_docas -> consulta_estacoes
 
 viagens -> tarifacao
 viagens -> cobranca
+viagens -> faturacao
 
 tarifacao -> utilizadores
 cobranca -> utilizadores
 
 historico -> viagens
 
-faturacao -> viagens
-faturacao -> cobranca
 
 planeamento_redistribuicao -> consulta_estacoes
 planeamento_redistribuicao -> planeamento_rotas
@@ -60,6 +58,7 @@ Em particular:
 - `desbloqueio` não pode depender diretamente de `viagens`;
 - `tarifacao` não pode depender de `cobranca`;
 - `relatorios_municipais` não pode depender de `viagens`;
+- `faturacao` não pode depender de `viagens` nem de `cobranca`, pois recebe os dados necessários no pedido de emissão enviado por `viagens`;
 - os restantes componentes não podem depender de `relatorios_municipais`.
 
 O mecanismo de comunicação não altera estas regras de dependência lógica.
@@ -111,11 +110,11 @@ validar utilizador
 -> confirmar desbloqueio físico
 -> iniciar viagem
 -> confirmar encaixe na doca
--> fechar viagem
+-> fechar viagem e guardar os respetivos dados
 -> calcular tarifa
 -> cobrar, se aplicável
+-> emitir e guardar fatura, se aplicável
 ```
-
 Regras obrigatórias:
 
 1. Uma viagem só pode ser iniciada depois da confirmação física do desbloqueio.
@@ -123,11 +122,11 @@ Regras obrigatórias:
 3. A tarifa só pode ser calculada depois de a viagem estar fechada.
 4. A cobrança só pode ocorrer depois de a tarifa ter sido calculada.
 5. Se a tarifa for zero, não é efetuada cobrança.
-6. O processamento repetido do mesmo evento não pode duplicar uma viagem nem uma cobrança.
+6. O processamento repetido do mesmo evento não pode duplicar uma viagem, uma cobrança nem uma fatura.
 
 Dentro de `Viagens`, a alteração do estado da viagem e a persistência desse novo estado devem fazer parte da mesma unidade de trabalho.
 
-O fecho da viagem, o cálculo da tarifa e a cobrança respeitam uma ordem temporal, mas **não constituem uma única transação distribuída**.
+O fecho da viagem, a tarifação, a cobrança e a faturação respeitam uma ordem temporal, mas não constituem uma única transação. O fecho é confirmado na base de dados antes das operações seguintes e não é desfeito se estas falharem.
 
 No fluxo `Telemetria -> Manutenção`, a comunicação é assíncrona: Telemetria publica a mensagem no broker e não espera pela criação da ordem de manutenção.
 
@@ -137,10 +136,10 @@ No fluxo `Telemetria -> Manutenção`, a comunicação é assíncrona: Telemetri
 - Cada componente deve manter apenas a responsabilidade definida na secção 1.
 - Dependências entre componentes devem respeitar estritamente a secção 2.
 - A comunicação entre componentes deve ser feita através de contratos explícitos.
-- O fluxo `desbloquear -> devolver -> cobrar` utiliza comunicação síncrona.
+- O fluxo `desbloquear -> devolver -> cobrar -> faturar` utiliza comunicação síncrona.
 - `Telemetria -> Manutenção` utiliza comunicação assíncrona através do broker.
 - A lógica de tarifação pertence exclusivamente a `tarifacao`.
-- A coordenação entre fecho da viagem, tarifação e cobrança pertence a `viagens`.
+- A coordenação entre fecho da viagem, tarifação, cobrança e faturação pertence a `viagens`.
 - A comunicação física com as docas pertence a `comunicacao_docas`.
 - Reporting apenas pode escrever o seu próprio resultado; o acesso aos dados operacionais é read-only.
 - Código para tratamento de reenvios deve ser idempotente.

@@ -21,6 +21,7 @@ ALLOWED_DEPENDENCIES = {
     "src.viagens.viagens": {
         "src.viagens.tarifacao",
         "src.viagens.cobranca",
+        "src.viagens.faturacao",
     },
 
     "src.viagens.tarifacao": {
@@ -35,11 +36,6 @@ ALLOWED_DEPENDENCIES = {
         "src.viagens.viagens",
     },
 
-    "src.viagens.faturacao": {
-        "src.viagens.viagens",
-        "src.viagens.cobranca",
-    },
-
     "src.redistribuicao.planeamento_redistribuicao": {
         "src.estacoes.consulta_estacoes",
         "src.redistribuicao.planeamento_rotas",
@@ -49,6 +45,7 @@ ALLOWED_DEPENDENCIES = {
         "src.manutencao.manutencao",
     },
 
+    "src.viagens.faturacao": set(),
     "src.estacoes.consulta_estacoes": set(),
     "src.redistribuicao.planeamento_rotas": set(),
     "src.manutencao.manutencao": set(),
