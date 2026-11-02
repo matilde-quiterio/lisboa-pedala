@@ -21,13 +21,26 @@ utilizador autenticado solicita associação do cartão
 
 ### Workflow 2 — Realizar uma viagem
 
+**Pedido e autorização**
+
 pedir desbloqueio pela app através de QR ou com o cartão Navegante
 → identificar e validar utilizador
-→ desbloquear bicicleta
-→ iniciar viagem
+→ verificar que o utilizador e a bicicleta podem iniciar uma nova utilização
+→ registar viagem pendente de retirada
+→ autorizar desbloqueio
+→ enviar comando de destrancamento à doca
+
+**Retirada e devolução**
+
+confirmar retirada da bicicleta
+→ iniciar viagem, usando a hora da retirada registada pela doca
 → devolver bicicleta
-→ fechar viagem e guardar os respetivos dados
-→ calcular tarifa
+→ receber confirmação de encaixe na doca
+→ fechar viagem e guardar os respetivos dados, usando a hora do encaixe registada pela doca
+
+**Tarifação, cobrança e faturação**
+
+calcular tarifa
 → cobrar, se aplicável
 → emitir fatura, se aplicável
 
@@ -85,8 +98,8 @@ detetar desequilíbrio na ocupação das estações que ultrapasse o limiar conf
 ## 4. Componentes lógicos e responsabilidades
 
 - **Utilizadores** — gere a identificação dos utilizadores e os dados da conta necessários ao acesso e à tarifação.
-- **Desbloqueio** — valida e executa o desbloqueio de uma bicicleta.
-- **Viagens** — gere o ciclo de vida das viagens, registando o seu início e fecho e coordenando a tarifação, a cobrança e a faturação, quando aplicáveis.
+- **Desbloqueio** — coordena o pedido de acesso à bicicleta, validando o utilizador através de Utilizadores, solicitando a preparação da viagem a Viagens e o destrancamento a Comunicação das Docas.
+- **Viagens** — gere o ciclo de vida das viagens, verificando a exclusividade do utilizador e da bicicleta, criando o registo pendente e atualizando os estados com base nos eventos das docas; após o fecho, coordena a tarifação, a cobrança e a faturação, quando aplicáveis.
 - **Tarifação** — calcula a tarifa aplicável a uma viagem.
 - **Cobrança** — processa a cobrança ao utilizador.
 - **Manutenção** — recebe reportes manuais e avarias identificadas pela Telemetria, cria ordens pendentes de avaliação pelos técnicos e gere o registo das intervenções e o fecho das ordens.
@@ -103,7 +116,7 @@ detetar desequilíbrio na ocupação das estações que ultrapasse o limiar conf
 
 De forma geral, os componentes definidos apresentam boa coesão, uma vez que cada um concentra responsabilidades relacionadas com uma função específica do sistema.
 
-Por exemplo, Desbloqueio trata apenas do processo de desbloqueio, Viagens concentra o registo e estado das viagens, Tarifação calcula os valores aplicáveis e Manutenção trata dos reportes de avaria e ordens de manutenção.
+Por exemplo, Desbloqueio coordena o processo de acesso à bicicleta, enquanto Viagens gere o registo e os estados da utilização, desde o pendente até ao fecho. Viagens coordena também a tarifação, cobrança e faturação, mas a lógica dessas operações permanece nos respetivos componentes. Manutenção concentra o tratamento de avarias e ordens de manutenção.
 
 A separação entre componentes como Viagens, Tarifação, Cobrança, Faturação e Histórico de Viagens evita concentrar responsabilidades distintas num único componente, reduzindo o risco de baixa coesão.
 
@@ -127,6 +140,7 @@ onde:
 As dependências consideradas são:
 
 - Desbloqueio → Utilizadores
+- Desbloqueio → Viagens
 - Desbloqueio → Comunicação das Docas
 - Comunicação das Docas → Viagens
 - Comunicação das Docas → Consulta de Estações
@@ -143,8 +157,8 @@ As dependências consideradas são:
 | Componente | Depende de | CA | CE | Instabilidade |
 |---|---|---:|---:|---:|
 | Utilizadores | — | 3 | 0 | 0 |
-| Desbloqueio | Comunicação das Docas, Utilizadores | 0 | 2 | 1 |
-| Viagens | Tarifação, Cobrança, Faturação | 2 | 3 | 0,6 |
+| Desbloqueio | Comunicação das Docas, Utilizadores, Viagens | 0 | 3 | 1 |
+| Viagens | Tarifação, Cobrança, Faturação | 3 | 3 | 0,5 |
 | Tarifação | Utilizadores | 1 | 1 | 0,5 |
 | Cobrança | Utilizadores | 1 | 1 | 0,5 |
 | Telemetria | Manutenção | 0 | 1 | 1 |
@@ -165,11 +179,17 @@ Relatórios Municipais consulta diretamente a base de dados, apenas em leitura, 
 
 ## 7. Acoplamento temporal
 
-### Exemplo 1 — Devolução da bicicleta
+## 7. Acoplamento temporal
 
-A confirmação de encaixe da doca tem de ser recebida antes de a viagem poder ser fechada.
+### Exemplo 1 — Preparação e início da viagem
 
-### Exemplo 2 — Cobrança da viagem
+A verificação da exclusividade do utilizador e da bicicleta e a criação do registo pendente têm de ocorrer numa única transação, antes de enviar o comando de destrancamento. A viagem só passa a estar em curso após receber a confirmação da retirada, usando o instante físico registado pela doca.
+
+### Exemplo 2 — Devolução da bicicleta
+
+A confirmação de encaixe da doca tem de ser recebida antes de a viagem poder ser fechada. A hora de fim corresponde ao instante do encaixe registado pela doca, mesmo que a confirmação seja recebida posteriormente.
+
+### Exemplo 3 — Cobrança da viagem
 
 A viagem tem de estar fechada antes de a tarifa poder ser calculada, e a tarifa tem de ser calculada antes de a cobrança ser efetuada.
 
@@ -239,12 +259,26 @@ Essa coordenação foi atribuída a Viagens, que já dispõe dos dados da viagem
 
 Foi acrescentada a dependência Viagens → Faturação e retiradas Faturação → Viagens e Faturação → Cobrança. Como trade-off, Viagens assume mais uma dependência direta e a coordenação desta operação.
 
+### Terceira iteração de reestruturação
+
+#### Preparação da viagem e confirmação da retirada
+
+A análise das falhas de comunicação revelou que não estava distinguida a autorização do desbloqueio da retirada efetiva da bicicleta. Também não estava definido como impedir que o mesmo utilizador pedisse duas bicicletas ou que dois utilizadores pedissem a mesma bicicleta em simultâneo. Se a rede falhasse, faltava ainda explicar como associar os eventos de retirada e devolução recebidos mais tarde, incluindo quando chegassem fora de ordem.
+
+Passou a ser criado um registo de viagem pendente de retirada, associado ao utilizador e à bicicleta, antes de enviar o comando à doca. Viagens verifica a exclusividade de ambos e guarda esse registo numa única transação. A viagem só passa a estar em curso após confirmação da retirada, usando o instante físico registado pela doca.
+
+Desbloqueio mantém a coordenação do acesso, solicitando a preparação a Viagens e, se aceite, o destrancamento a Comunicação das Docas. Foi acrescentada a dependência Desbloqueio → Viagens, mantendo a gestão dos estados e da persistência em Viagens.
+
+O registo pendente permite associar os eventos de retirada e devolução, mesmo quando chegam atrasados, fora de ordem ou de estações diferentes. Foi também definido um prazo configurável de retirada, após o qual a doca tenta voltar a bloquear a bicicleta; sem retirada e com bloqueio confirmado, a viagem pendente é cancelada.
+
+Como trade-off, acrescentam-se uma dependência direta e estados a gerir, tornando explícita a preparação da viagem e o tratamento das confirmações físicas.
+
 ## 10. Lei de Deméter
 
 A arquitetura procura limitar o conhecimento entre componentes, fazendo com que cada componente interaja apenas com aqueles de que necessita diretamente.
 
-Por exemplo, o componente Desbloqueio comunica com Comunicação das Docas para executar o desbloqueio, não conhecendo diretamente o componente Viagens. Depois da confirmação da doca, Comunicação das Docas informa Viagens para iniciar a viagem.
+Por exemplo, Desbloqueio solicita a preparação da viagem através do contrato de Viagens, sem aceder diretamente aos seus dados internos. Para solicitar o destrancamento, comunica com Comunicação das Docas, sem conhecer os detalhes da interação física com a doca.
 
-Da mesma forma, Viagens interage diretamente com Tarifação para obter o valor a pagar e com Cobrança para executar o pagamento quando o valor é superior a zero. Ambos são colaboradores diretos, sem ser necessário aceder à estrutura interna de um para chegar ao outro.
+Da mesma forma, Viagens utiliza os contratos de Tarifação, Cobrança e Faturação para coordenar a conclusão da viagem, sem aceder à implementação interna desses componentes nem usar um deles para alcançar outro.
 
-Desta forma, cada componente conhece apenas os colaboradores diretamente necessários à sua responsabilidade, reduzindo o acoplamento.
+Desta forma, cada componente interage com os seus colaboradores diretos através de contratos explícitos, limitando o conhecimento sobre a estrutura interna dos restantes.

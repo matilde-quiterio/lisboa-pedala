@@ -46,7 +46,7 @@ As dependências dentro do mesmo domínio são permitidas quando correspondem à
 As dependências entre domínios são restritas às seguintes relações:
 
 - **Operação de Viagens** pode usar **Operação de Estações**, nomeadamente através da comunicação com as docas necessária ao desbloqueio das bicicletas.
-- **Operação de Estações** pode usar **Operação de Viagens**, nomeadamente quando Comunicação das Docas informa Viagens das confirmações de desbloqueio e devolução.
+- **Operação de Estações** pode usar **Operação de Viagens**, nomeadamente quando Comunicação das Docas informa Viagens das confirmações de retirada e devolução e dos resultados necessários para atualizar ou cancelar uma viagem pendente.
 - **Redistribuição** pode usar **Operação de Estações** para obter os dados de ocupação necessários ao equilíbrio das estações.
 - **Reporting Municipal** pode consultar diretamente a base de dados, apenas em leitura, através de queries definidas no próprio componente.
 - **Manutenção da Frota** não depende funcionalmente dos restantes domínios.
@@ -66,8 +66,9 @@ A vista de componentes e conectores representa as interações do fluxo principa
 ```mermaid
 flowchart TD
     D[Desbloqueio] -->|valida utilizador| U[Utilizadores]
-    D -->|solicita desbloqueio| CD[Comunicação das Docas]
-    CD -->|confirma desbloqueio| V[Viagens]
+    D -->|solicita preparação da viagem| V[Viagens]
+    D -->|solicita destrancamento| CD[Comunicação das Docas]
+    CD -->|confirma retirada| V
     CD -->|confirma devolução| V
     V -->|solicita cálculo da tarifa| T[Tarifação]
     T -->|consulta passe e tipo de utilizador| U
@@ -82,15 +83,18 @@ Os pagamentos por cartão ou MB WAY são simulados em Cobrança. A consulta de C
 As comunicações representadas neste fluxo são síncronas (request/response), permitindo obter diretamente o resultado de cada chamada.
 
 - **Desbloqueio → Utilizadores**: é solicitada a identificação e validação do utilizador.
-- **Desbloqueio → Comunicação das Docas**: é enviado o pedido de desbloqueio e aguardado o respetivo resultado.
-- **Comunicação das Docas → Viagens (desbloqueio)**: após a confirmação do desbloqueio físico da bicicleta, é iniciada a viagem.
-- **Comunicação das Docas → Viagens (devolução)**: após a confirmação do encaixe da bicicleta, a viagem é fechada e guardada.
+- **Desbloqueio → Viagens**: verifica-se que o utilizador e a bicicleta não têm viagem pendente ou em curso e cria-se uma viagem pendente de retirada associada a ambos, numa única transação. Este registo não inicia a contagem do tempo. Só após o sucesso desta operação é solicitado o destrancamento.
+- **Desbloqueio → Comunicação das Docas**: é enviado o pedido de destrancamento da bicicleta à doca.
+- **Comunicação das Docas → Viagens (retirada)**: após a confirmação da retirada física da bicicleta, a viagem passa de pendente a em curso, usando a hora da retirada registada pela doca.
+- **Comunicação das Docas → Viagens (devolução)**: após receber a confirmação do encaixe da bicicleta, a viagem é fechada e guardada, usando a hora do encaixe registada pela doca.
 - **Viagens → Tarifação**: depois de a viagem estar fechada, é solicitado o cálculo do valor a pagar.
 - **Tarifação → Utilizadores**: são consultados o passe e o tipo de utilizador para aplicar o tarifário.
 - **Viagens → Cobrança**: depois de calculada a tarifa, é solicitado o processamento da cobrança, caso o valor seja superior a zero.
 - **Cobrança → Utilizadores**: é obtida a referência do cartão associado, quando esse método de pagamento é utilizado.
 
-Optou-se por comunicação síncrona neste fluxo por se tratar do caminho principal da operação, em que existe dependência direta entre os passos e necessidade de uma resposta imediata ao utilizador.
+Optou-se por comunicação síncrona neste fluxo para simplificar a coordenação das operações e obter diretamente o resultado de cada chamada. A confirmação da retirada e a confirmação da devolução são recebidas em momentos distintos; não existe uma chamada aberta durante toda a viagem.
+
+O fecho e a persistência da viagem ocorrem antes da tarifação, cobrança e faturação. Uma falha nestas operações não desfaz o fecho nem elimina os dados da viagem.
 
 ## 5. Vista de Alocação
 
