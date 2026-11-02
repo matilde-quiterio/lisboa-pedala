@@ -17,6 +17,8 @@ utilizador autenticado solicita associação do cartão
 → verifica se já está associado a outra conta
 → associa o cartão à conta do utilizador
 
+- A leitura e validação do cartão Navegante são simuladas através de identificadores fictícios previamente definidos, sem integração com entidades externas.
+
 ### Workflow 2 — Realizar uma viagem
 
 pedir desbloqueio pela app através de QR ou com o cartão Navegante

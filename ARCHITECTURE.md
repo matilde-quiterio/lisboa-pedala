@@ -10,7 +10,8 @@ A arquitetura lógica é particionada por domínio. Cada componente tem uma resp
 |---|---|---|
 | Utilizadores | Gerir identificação e dados da conta necessários ao acesso e tarifação. | `src.viagens.utilizadores` |
 | Desbloqueio | Validar e executar o desbloqueio de uma bicicleta. | `src.viagens.desbloqueio` |
-| Viagens | Gerir o ciclo de vida das viagens e coordenar a tarifação, cobrança e faturação, quando aplicáveis. | `src.viagens.viagens` || Tarifação | Calcular a tarifa aplicável a uma viagem. | `src.viagens.tarifacao` |
+| Viagens | Gerir o ciclo de vida das viagens e coordenar a tarifação, cobrança e faturação, quando aplicáveis. | `src.viagens.viagens` |
+| Tarifação | Calcular a tarifa aplicável a uma viagem. | `src.viagens.tarifacao` |
 | Cobrança | Processar a cobrança ao utilizador. | `src.viagens.cobranca` |
 | Histórico de Viagens | Disponibilizar ao utilizador as viagens realizadas. | `src.viagens.historico` |
 | Faturação | Gerar, guardar e disponibilizar faturas associadas às viagens. | `src.viagens.faturacao` |
@@ -88,7 +89,7 @@ Implicações para o código:
 - o mesmo evento não pode iniciar ou fechar a mesma viagem mais do que uma vez;
 - uma devolução recebida após recuperação da ligação deve usar como hora de fim o instante de encaixe registado pela doca;
 - mensagens de avaria reenviadas pelo broker não podem criar ordens de manutenção duplicadas;
-- falhas de comunicação devem ser tratadas explicitamente e não assumidas como impossíveis.
+- falhas de comunicação devem ser tratadas explicitamente e não assumidas como impossíveis. 
 
 ### Configurability
 
@@ -130,6 +131,14 @@ O fecho da viagem, a tarifação, a cobrança e a faturação respeitam uma orde
 
 No fluxo `Telemetria -> Manutenção`, a comunicação é assíncrona: Telemetria publica a mensagem no broker e não espera pela criação da ordem de manutenção.
 
+### Seleção do meio de pagamento
+
+O utilizador escolhe entre cartão associado e MB WAY. `viagens` transmite essa escolha e os dados necessários no pedido a `cobranca`.
+
+No pagamento com cartão associado, `cobranca` consulta `utilizadores` para obter a referência do cartão. No pagamento por MB WAY, utiliza os dados fornecidos no pedido.
+
+Ter um cartão associado não impede escolher MB WAY.
+
 ## 5. Convenções de código
 
 - O código é organizado primeiro por domínio: `viagens`, `estacoes`, `redistribuicao`, `manutencao` e `reporting`.
@@ -144,6 +153,9 @@ No fluxo `Telemetria -> Manutenção`, a comunicação é assíncrona: Telemetri
 - Reporting apenas pode escrever o seu próprio resultado; o acesso aos dados operacionais é read-only.
 - Código para tratamento de reenvios deve ser idempotente.
 - Não devem ser introduzidas dependências circulares.
+- A interação com as docas é simulada, incluindo comandos de desbloqueio, confirmações e reenvio de eventos após falhas de ligação.
+- Os pagamentos por cartão ou MB WAY são simulados em `cobranca`, sem integração com prestadores externos.
+- A leitura e validação do cartão Navegante são simuladas através de identificadores fictícios previamente definidos, sem integração com entidades externas.
 
 ## 6. A IA não pode
 
@@ -173,7 +185,7 @@ Se uma funcionalidade exigir violar uma destas regras, a IA deve sinalizar a nec
 | Tarifação | ADR-002, ADR-004 |
 | Cobrança | ADR-002, ADR-004 |
 | Histórico de Viagens | ADR-004 |
-| Faturação | ADR-004 |
+| Faturação | ADR-004 | 
 | Comunicação das Docas | ADR-002, ADR-003, ADR-004 |
 | Consulta de Estações | ADR-004 |
 | Planeamento de Redistribuição | ADR-004 |
