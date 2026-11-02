@@ -25,23 +25,20 @@ flowchart LR
 
     classDef componente fill:#174a73,stroke:#103550,color:#fff;
     classDef equipamento fill:#ffe0b2,stroke:#b36b00,color:#111;
-    classDef infraestrutura fill:#e8f0fe,stroke:#2457a7,color:#111;
 
-    class T,M componente;
+    class T,M,Q,DB componente;
     class B equipamento;
-    class Q,DB infraestrutura;
 ```
 
 ## Legenda
 
-- **Azul-escuro:** componentes internos da aplicação Manutenção da Frota.
+- **Azul-escuro:** componentes, broker e armazenamento internos do Lisboa Pedala.
 - **Laranja-claro:** equipamento externo.
-- **Azul-claro:** infraestrutura e armazenamento partilhado.
 - **Seta contínua:** envio ou acesso direto a dados.
 - **Seta tracejada:** comunicação assíncrona através do broker.
 
 As bicicletas elétricas enviam telemetria para o componente Telemetria.
 
-Quando a Telemetria identifica uma avaria, publica uma mensagem no broker. O componente Manutenção recebe posteriormente essa mensagem e pode criar uma ordem de manutenção.
+Quando Telemetria identifica uma avaria, publica uma mensagem no broker. Manutenção consome-a e cria uma ordem pendente de avaliação pelo técnico, sem duplicar ordens quando a mesma mensagem é novamente entregue.
 
 A comunicação `Telemetria → Manutenção` é, por isso, assíncrona e não exige que Telemetria espere pela criação da ordem.
