@@ -281,6 +281,18 @@ O registo pendente permite associar os eventos de retirada e devolução, mesmo 
 
 Como trade-off, acrescentam-se uma dependência direta e estados a gerir, tornando explícita a preparação da viagem e o tratamento das confirmações físicas.
 
+### Quarta iteração de reestruturação
+
+#### Clarificação dos contratos entre componentes
+
+Durante a implementação verificou-se que as regras de dependência podiam ser violadas através da reutilização de tipos internos de outros componentes, mesmo sem existir uma chamada direta entre eles.
+
+Foi por isso clarificado que as regras `allowed-to-use` também se aplicam aos modelos, DTOs, enums e outros tipos utilizados nos contratos entre componentes.
+
+Os contratos devem evitar reutilizar tipos internos quando isso introduzir uma dependência não permitida.
+
+Esta alteração não modifica os componentes nem as dependências definidas anteriormente; apenas torna as regras existentes mais explícitas e verificáveis.
+
 ## 10. Lei de Deméter
 
 A arquitetura procura limitar o conhecimento entre componentes, fazendo com que cada componente interaja apenas com aqueles de que necessita diretamente.

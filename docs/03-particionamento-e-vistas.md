@@ -41,7 +41,7 @@ Como trade-off, exige maior atenção às dependências entre domínios e pode l
 
 ## 3. Regras allowed-to-use
 
-Mesmo dentro do mesmo domínio, apenas são permitidas as dependências entre componentes definidas nas regras allowed-to-use do ARCHITECTURE.md. As dependências entre domínios ficam adicionalmente restritas às relações seguintes.
+Mesmo dentro do mesmo domínio, apenas são permitidas as dependências entre componentes definidas nas regras `allowed-to-use` do `ARCHITECTURE.md`.
 
 As dependências entre domínios são restritas às seguintes relações:
 
