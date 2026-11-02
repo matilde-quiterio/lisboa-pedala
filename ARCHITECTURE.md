@@ -118,7 +118,7 @@ Implicações:
 - `tarifacao` recebe ou obtém a configuração aplicável;
 - alterar um tarifário não deve exigir alterações noutros componentes.
 
-Para assinantes com passe anual, cada viagem inclui 45 minutos gratuitos e, depois disso, é cobrada por blocos de 15 minutos. O preço de cada bloco pertence à configuração do município.
+Para assinantes com passe anual, cada viagem inclui 45 minutos gratuitos e, depois disso, é cobrada por blocos de 15 minutos. O preço de cada bloco pertence à configuração do município. Cada bloco de 15 minutos iniciado após os 45 minutos gratuitos é cobrado por inteiro. Assim, qualquer duração superior a 45 minutos origina pelo menos um bloco cobrado.
 
 ## 4. Acoplamento temporal e unidades de trabalho
 
@@ -136,23 +136,23 @@ identificar e validar utilizador
 -> terminar viagem usando o instante físico do encaixe
 -> calcular tarifa
 -> cobrar, se aplicável
--> emitir e guardar fatura, se aplicável
 ```
 
 Regras obrigatórias:
 
 1. `Desbloqueio` pede a preparação a `Viagens` antes do destrancamento.
 2. `Viagens` verifica a exclusividade do utilizador e da bicicleta e cria a viagem `PENDENTE` na mesma transação.
-3. O estado `PENDENTE` associa utilizador e bicicleta, mas não inicia a contagem da viagem.
-4. O destrancamento não inicia a viagem.
-5. A viagem passa a `EM_CURSO` apenas após confirmação da retirada física.
-6. A viagem termina apenas após confirmação do encaixe físico.
-7. O registo do evento como processado e a atualização correspondente da viagem ocorrem na mesma transação.
-8. A tarifa é calculada apenas depois do fecho da viagem.
-9. A cobrança ocorre apenas depois da tarifa; tarifa zero não origina cobrança.
-10. Eventos repetidos não podem duplicar viagens, cobranças ou faturas.
+3. Os eventos de retirada e devolução devem ser correlacionados com a utilização criada antes do destrancamento através de um identificador comum, conforme ADR-003.
+4. O estado `PENDENTE` associa utilizador e bicicleta, mas não inicia a contagem da viagem.
+5. O destrancamento não inicia a viagem.
+6. A viagem passa a `EM_CURSO` apenas após confirmação da retirada física.
+7. A viagem termina apenas após confirmação do encaixe físico.
+8. O registo do evento como processado e a atualização correspondente da viagem ocorrem na mesma transação.
+9. A tarifa é calculada apenas depois do fecho da viagem.
+10. A cobrança ocorre apenas depois da tarifa; tarifa zero não origina cobrança.
+11. Eventos repetidos não podem duplicar viagens, cobranças ou faturas.
 
-O fecho, tarifação, cobrança e faturação respeitam esta ordem, mas não formam uma única transação. Uma viagem já terminada não é reaberta se operações posteriores falharem.
+O fecho, a tarifação e a cobrança respeitam esta ordem, mas não formam uma única transação. Uma viagem já terminada não é reaberta se a tarifação ou a cobrança falharem. A faturação é uma responsabilidade posterior de `Faturação` e não faz parte do fluxo obrigatório da US-1.
 
 ### Prazo de retirada
 
@@ -178,12 +178,13 @@ Durante falhas de rede, as docas guardam eventos e reenviam-nos quando a comunic
 
 Cada evento inclui:
 
-- identificador único;
+- identificador único do evento;
+- identificador da utilização a que pertence;
 - bicicleta;
 - doca ou estação;
 - instante físico.
 
-`Comunicação das Docas` encaminha os eventos para `Viagens`, que usa a associação previamente guardada para determinar a viagem correspondente.
+`Comunicação das Docas` encaminha os eventos para `Viagens`. Os eventos de retirada e devolução transportam um identificador comum à utilização criada antes do destrancamento, permitindo a `Viagens` determinar inequivocamente a viagem correspondente, conforme ADR-003.
 
 Os eventos podem chegar atrasados ou fora de ordem. Se a devolução chegar antes da retirada, é guardada até chegar o evento em falta. Quando ambos existem, a viagem termina usando os respetivos instantes físicos.
 
@@ -211,13 +212,15 @@ No pagamento por MB WAY, utiliza os dados fornecidos no pedido.
 
 Ter um cartão associado não impede a utilização de MB WAY.
 
+No esqueleto funcional, a cobrança é simulada deterministicamente: um pagamento é considerado aceite quando existem os dados necessários ao meio de pagamento escolhido; a ausência desses dados origina falha da cobrança. A mesma chave de idempotência não pode produzir mais do que uma cobrança.
+
 ## 5. Convenções de código
 
 - O código é organizado primeiro por domínio: `viagens`, `estacoes`, `redistribuicao`, `manutencao` e `reporting`.
 - Cada componente mantém apenas a responsabilidade definida na secção 1.
 - Dependências entre componentes respeitam estritamente a secção 2.
 - A comunicação entre componentes usa contratos explícitos.
-- O fluxo `desbloquear -> devolver -> cobrar -> faturar` usa comunicação síncrona.
+- O fluxo `desbloquear -> devolver -> cobrar` usa comunicação síncrona.
 - `Telemetria -> Manutenção` usa comunicação assíncrona através do broker.
 - A lógica de cálculo da tarifa pertence exclusivamente a `tarifacao`.
 - A coordenação de fecho, tarifação, cobrança e faturação pertence a `viagens`.
@@ -229,6 +232,8 @@ Ter um cartão associado não impede a utilização de MB WAY.
 - Pagamentos por cartão ou MB WAY são simulados em `cobranca`.
 - A leitura e validação do cartão Navegante usam identificadores fictícios previamente definidos.
 - O esqueleto funcional utiliza uma CLI simples; a CLI não contém lógica de negócio.
+
+No esqueleto funcional, existem utilizadores fictícios previamente configurados. Um utilizador é autorizado quando existe e está marcado como ativo; utilizadores inexistentes ou inativos são rejeitados.
 
 ## 6. A IA não pode
 
