@@ -177,6 +177,16 @@ Faturação recebe de Viagens os dados necessários à emissão da fatura, sem c
 
 Relatórios Municipais consulta diretamente a base de dados, apenas em leitura, através de queries definidas no próprio componente. Depende, por isso, da estrutura das tabelas consultadas, embora não utilize diretamente o componente Viagens.
 
+### Dependências através de contratos e tipos
+
+Uma dependência entre componentes não resulta apenas de chamadas entre serviços.
+
+A importação de modelos, DTOs, enums ou outros tipos definidos internamente por outro componente também introduz uma dependência arquitetural e deve respeitar as regras `allowed-to-use`.
+
+Assim, os contratos entre componentes devem evitar reutilizar diretamente tipos internos quando essa reutilização cria uma dependência não permitida.
+
+Esta clarificação evita que a reutilização de tipos internos introduza dependências não previstas, como `Tarifação -> Viagens` ou `Cobrança -> Viagens`.
+
 ## 7. Acoplamento temporal
 
 ### Exemplo 1 — Preparação e início da viagem

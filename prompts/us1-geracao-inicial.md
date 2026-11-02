@@ -62,7 +62,7 @@ A estrutura geral do fluxo estava de acordo com a arquitetura, mas o código nã
 
 As duas violações surgiram através da utilização de tipos definidos dentro do componente `Viagens`.
 
-A IA também identificou alguns pontos que não estavam completamente definidos nos ficheiros fornecidos, como:
+A IA também identificou alguns pontos que não estavam completamente definidos nos ficheiros fornecidos:
 
 - tecnologia concreta de persistência;
 - regras concretas de validação de utilizadores;
@@ -74,7 +74,7 @@ Esses pontos não foram inventados pela IA, o que foi considerado positivo.
 
 ## Fitness functions
 
-Depois de colocar no projeto o código gerado pela IA, foi executado:
+Depois de colocar temporariamente no projeto o código gerado pela IA, foi executado:
 
 ```powershell
 python -m pytest tests/architecture -v
@@ -106,10 +106,20 @@ Este ciclo surgiu porque `Viagens` já depende de `Cobrança`, enquanto o códig
 
 ## Quem detetou as violações
 
-As violações foram identificadas na revisão do código e confirmadas automaticamente pelas duas fitness functions arquiteturais.
+As violações foram identificadas durante a revisão do código e confirmadas automaticamente pelas duas fitness functions arquiteturais.
 
 ## Decisão
 
-O código gerado foi rejeitado nesta forma.
+O código gerado foi rejeitado nesta forma e não foi integrado definitivamente em `src/`.
 
-Será necessária uma nova geração ou correção dos contratos para que `Tarifação` e `Cobrança` deixem de depender de modelos internos de `Viagens` e a arquitetura volte a respeitar as regras `allowed-to-use` e a ausência de ciclos.
+A primeira tentativa mostrou que a arquitetura definia corretamente as dependências permitidas, mas não tornava suficientemente explícito que a reutilização de modelos e tipos internos também conta como dependência entre componentes.
+
+A geração revelou também que a tecnologia de persistência do esqueleto funcional não estava definida de forma concreta.
+
+Por esse motivo, antes da segunda tentativa foram clarificadas no `ARCHITECTURE.md`:
+
+- as regras aplicáveis aos contratos e tipos partilhados entre componentes;
+- a utilização de SQLite para persistência do esqueleto funcional;
+- a proibição de depender apenas de estado local em memória para dados necessários entre pedidos.
+
+Depois destas alterações será realizada uma nova geração da US-1 e as fitness functions serão executadas novamente.

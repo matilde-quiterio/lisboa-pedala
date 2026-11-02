@@ -64,6 +64,15 @@ Em particular:
 
 O mecanismo de comunicação não altera estas regras de dependência lógica.
 
+### Contratos entre componentes
+
+As regras `allowed-to-use` aplicam-se também aos contratos, tipos e estruturas de dados usados na comunicação entre componentes.
+
+Um componente não pode importar modelos, DTOs, enums ou outros tipos internos de outro componente se essa dependência não estiver explicitamente permitida.
+
+A reutilização de um tipo definido noutro componente conta como dependência arquitetural, mesmo quando o tipo é usado apenas para type checking.
+
+Os contratos devem ser definidos de forma a não introduzir dependências adicionais entre componentes. Quando necessário, os dados devem ser passados através de tipos simples ou estruturas definidas pelo componente que expõe o contrato.
 ## 3. Características arquiteturais prioritárias
 
 ### Availability
@@ -78,6 +87,16 @@ Implicações para o código:
 - a implementação deve assumir que uma instância pode falhar e outra continuar a servir pedidos.
 
 Novos desbloqueios continuam a exigir comunicação e autorização do backend, conforme ADR-003.
+
+### Persistência do esqueleto funcional
+
+Para o esqueleto funcional executado localmente é utilizada SQLite como implementação da base de dados partilhada prevista na arquitetura.
+
+O estado necessário ao processamento de pedidos posteriores não pode existir apenas em memória local de uma instância do backend.
+
+As operações que exigem consistência devem ser executadas atomicamente. Em particular, a verificação de que o utilizador e a bicicleta não estão associados a outra viagem `PENDENTE` ou `EM_CURSO` e a criação da nova viagem `PENDENTE` devem ocorrer na mesma transação.
+
+A utilização de SQLite aplica-se ao esqueleto funcional do projeto e não altera a decisão de deployment definida no ADR-004.
 
 ### Robustness
 
