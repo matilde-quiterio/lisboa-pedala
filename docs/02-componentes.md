@@ -38,11 +38,12 @@ confirmar retirada da bicicleta
 → receber confirmação de encaixe na doca
 → fechar viagem e guardar os respetivos dados, usando a hora do encaixe registada pela doca
 
-**Tarifação, cobrança e faturação**
+**Tarifação e cobrança**
 
-calcular tarifa
+calcular tarifa  
 → cobrar, se aplicável
-→ emitir fatura, se aplicável
+
+A faturação é uma responsabilidade posterior de Faturação e não faz parte do fluxo obrigatório da US-1.
 
 ### Workflow 3 — Processar telemetria
 
@@ -90,7 +91,7 @@ detetar desequilíbrio na ocupação das estações que ultrapasse o limiar conf
 
 | User story | Descrição | Componentes envolvidos |
 |---|---|---|
-| US-1 | Como assinante, desbloqueio e devolvo uma bicicleta e a viagem fica registada e cobrada. | Utilizadores, Desbloqueio, Comunicação das Docas, Viagens, Tarifação, Cobrança, Faturação|
+| US-1 | Como assinante, desbloqueio e devolvo uma bicicleta e a viagem fica registada e cobrada. | Utilizadores, Desbloqueio, Comunicação das Docas, Viagens, Tarifação, Cobrança |
 | US-2 | Como técnico, recebo uma ordem de manutenção quando uma bicicleta reporta avaria. | Telemetria, Manutenção |
 | US-3 | Como doca sem rede, reenvio os eventos guardados quando a rede volta, sem duplicar viagens. | Comunicação das Docas, Viagens |
 | US-4 | Como gestor municipal, obtenho o relatório de utilização por freguesia. | Relatórios Municipais |
@@ -277,7 +278,7 @@ Passou a ser criado um registo de viagem pendente de retirada, associado ao util
 
 Desbloqueio mantém a coordenação do acesso, solicitando a preparação a Viagens e, se aceite, o destrancamento a Comunicação das Docas. Foi acrescentada a dependência Desbloqueio → Viagens, mantendo a gestão dos estados e da persistência em Viagens.
 
-O registo pendente permite associar os eventos de retirada e devolução, mesmo quando chegam atrasados, fora de ordem ou de estações diferentes. Foi também definido um prazo configurável de retirada, após o qual a doca tenta voltar a bloquear a bicicleta; sem retirada e com bloqueio confirmado, a viagem pendente é cancelada.
+O registo pendente fica associado a um identificador da utilização, enviado à Comunicação das Docas no pedido de destrancamento e transportado posteriormente nos eventos de retirada e devolução. Este identificador permite associar os eventos inequivocamente à utilização correspondente, mesmo quando chegam atrasados ou fora de ordem. Foi também definido um prazo configurável de retirada, após o qual a doca tenta voltar a bloquear a bicicleta; sem retirada e com bloqueio confirmado, a viagem pendente é cancelada.
 
 Como trade-off, acrescentam-se uma dependência direta e estados a gerir, tornando explícita a preparação da viagem e o tratamento das confirmações físicas.
 
