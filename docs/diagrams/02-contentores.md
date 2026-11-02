@@ -22,7 +22,8 @@ flowchart TB
         guarda os dados da plataforma")]
 
         Q["Broker de mensagens:
-        transporta mensagens de avaria"]
+        suporta comunicação assíncrona
+        entre Telemetria e Manutenção"]
 
         A -->|Operações da plataforma| BE
         A -->|Reportes e ordens| MF
