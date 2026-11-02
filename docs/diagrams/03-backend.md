@@ -61,7 +61,7 @@ flowchart TB
 - **Cilindro:** base de dados.
 - **Seta:** dependência ou comunicação no sentido indicado.
 
-As dependências entre componentes correspondem às regras `allowed-to-use` definidas em `ARCHITECTURE.md`. As chamadas entre estes componentes são síncronas.
+As dependências entre componentes correspondem às regras `allowed-to-use` definidas em `ARCHITECTURE.md`. As interações diretas entre estes componentes usam comunicação síncrona request/response. Os eventos físicos das docas são recebidos em momentos distintos e encaminhados por Comunicação das Docas.
 
 Desbloqueio coordena o acesso. Solicita a Viagens a verificação da exclusividade do utilizador e da bicicleta e a criação do registo pendente antes de solicitar o destrancamento.
 

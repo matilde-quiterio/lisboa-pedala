@@ -19,8 +19,8 @@ flowchart TB
     E -->|Consulta planos de recolha, entrega e rotas| S
     G -->|Consulta relatórios municipais| S
 
-    S -->|Envia comandos de desbloqueio| D
-    D -->|Enviam confirmações de desbloqueio e devolução e dados de ocupação das docas| S
+    S -->|Envia comandos de destrancamento| D
+    D -->|Enviam resultados de destrancamento, eventos de retirada e devolução e dados de ocupação| S
     B -->|Enviam telemetria| S
 
     classDef pessoa fill:#e8f0fe,stroke:#2457a7,color:#111;

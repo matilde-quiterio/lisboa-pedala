@@ -219,7 +219,7 @@ Se uma funcionalidade exigir violar uma destas regras, a IA deve sinalizar a nec
 | Tarifação | ADR-002, ADR-004 |
 | Cobrança | ADR-002, ADR-004 |
 | Histórico de Viagens | ADR-004 |
-| Faturação | ADR-004 | 
+| Faturação | ADR-002, ADR-004 | 
 | Comunicação das Docas | ADR-002, ADR-003, ADR-004 |
 | Consulta de Estações | ADR-004 |
 | Planeamento de Redistribuição | ADR-004 |

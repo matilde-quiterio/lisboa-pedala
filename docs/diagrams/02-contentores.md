@@ -37,7 +37,7 @@ flowchart TB
 
     P -->|Utilizam| A
     BE -->|Pedido de desbloqueio| D
-    D -->|Confirma desbloqueio e devolução; informa ocupação| BE
+    D -->|Envia resultados de destrancamento, retirada, devolução e ocupação| BE
     B -->|Telemetria| MF
 
     classDef pessoa fill:#e8f0fe,stroke:#2457a7,color:#111;
@@ -59,7 +59,7 @@ flowchart TB
 - **Seta contínua:** pedido, acesso a dados ou envio de informação, conforme o texto.
 - **Seta tracejada:** comunicação assíncrona através do broker.
 
-As chamadas da aplicação cliente e as comunicações com as docas são síncronas. As docas recebem comandos de desbloqueio e enviam confirmações de desbloqueio e devolução e dados de ocupação.
+As chamadas da aplicação cliente e os pedidos diretos às docas usam comunicação síncrona request/response. Os eventos físicos de retirada, devolução e outros resultados podem ser recebidos posteriormente e reenviados após falhas de ligação. As docas recebem comandos de destrancamento e enviam resultados da operação e eventos físicos de retirada e devolução, além dos dados de ocupação.
 
 No backend principal, Reporting apenas lê os dados operacionais.
 
