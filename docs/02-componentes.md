@@ -90,7 +90,7 @@ detetar desequilíbrio na ocupação das estações que ultrapasse o limiar conf
 
 | User story | Descrição | Componentes envolvidos |
 |---|---|---|
-| US-1 | Como assinante, desbloqueio e devolvo uma bicicleta e a viagem fica registada e cobrada. | Utilizadores, Desbloqueio, Comunicação das Docas, Viagens, Tarifação, Cobrança |
+| US-1 | Como assinante, desbloqueio e devolvo uma bicicleta e a viagem fica registada e cobrada. | Utilizadores, Desbloqueio, Comunicação das Docas, Viagens, Tarifação, Cobrança, Faturação|
 | US-2 | Como técnico, recebo uma ordem de manutenção quando uma bicicleta reporta avaria. | Telemetria, Manutenção |
 | US-3 | Como doca sem rede, reenvio os eventos guardados quando a rede volta, sem duplicar viagens. | Comunicação das Docas, Viagens |
 | US-4 | Como gestor municipal, obtenho o relatório de utilização por freguesia. | Relatórios Municipais |
@@ -176,8 +176,6 @@ Valores próximos de 0 indicam componentes mais estáveis, enquanto valores pró
 Faturação recebe de Viagens os dados necessários à emissão da fatura, sem consultar diretamente Viagens ou Cobrança.
 
 Relatórios Municipais consulta diretamente a base de dados, apenas em leitura, através de queries definidas no próprio componente. Depende, por isso, da estrutura das tabelas consultadas, embora não utilize diretamente o componente Viagens.
-
-## 7. Acoplamento temporal
 
 ## 7. Acoplamento temporal
 

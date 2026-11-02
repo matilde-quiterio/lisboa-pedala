@@ -199,7 +199,6 @@ A IA não pode:
 - criar uma dependência que não esteja nas regras `allowed-to-use`;
 - criar novos componentes ou mover responsabilidades entre componentes sem decisão arquitetural;
 - criar novos serviços, bases de dados ou brokers sem um ADR;
-- permitir que `desbloqueio` aceda diretamente a `viagens`;
 - fazer `tarifacao` desencadear diretamente `cobranca`;
 - fazer Reporting depender diretamente de `viagens`;
 - colocar tarifários específicos hardcoded;

@@ -7,8 +7,9 @@ SRC = Path("src")
 
 ALLOWED_DEPENDENCIES = {
     "src.viagens.desbloqueio": {
-        "src.viagens.utilizadores",
-        "src.estacoes.comunicacao_docas",
+    "src.viagens.utilizadores",
+    "src.viagens.viagens",
+    "src.estacoes.comunicacao_docas",
     },
     "src.estacoes.comunicacao_docas": {
         "src.viagens.viagens",
