@@ -154,6 +154,8 @@ Regras obrigatórias:
 
 O fecho, a tarifação e a cobrança respeitam esta ordem, mas não formam uma única transação. Uma viagem já terminada não é reaberta se a tarifação ou a cobrança falharem. A faturação é uma responsabilidade posterior de `Faturação` e não faz parte do fluxo obrigatório da US-1.
 
+Se a tarifação ou a cobrança falharem após o fecho da viagem, uma nova tentativa usa o estado persistido da viagem e não exige reprocessar o evento físico de devolução. A viagem permanece TERMINADA. Repetições de cobrança utilizam a mesma chave de idempotência.
+
 ### Prazo de retirada
 
 Após o destrancamento existe um prazo configurável para retirar a bicicleta.
