@@ -32,37 +32,89 @@ class CobrancaService:
     ) -> dict:
         with sqlite3.connect(self.db_path) as conn:
             existing = conn.execute(
-                "SELECT estado, detalhe FROM cobrancas WHERE chave_idempotencia = ?",
+                """
+                SELECT estado, detalhe
+                FROM cobrancas
+                WHERE chave_idempotencia = ?
+                """,
                 (chave_idempotencia,),
             ).fetchone()
-            if existing:
-                return {"estado": existing[0], "detalhe": existing[1]}
+
+            # Se já foi aceite, a operação está concluída.
+            # A mesma chave nunca origina uma segunda cobrança.
+            if existing and existing[0] == "ACEITE":
+                return {
+                    "estado": existing[0],
+                    "detalhe": existing[1],
+                }
 
             if meio == "CARTAO_ASSOCIADO":
-                dados = self.utilizadores.obter_referencia_cartao(utilizador_id)
+                dados = self.utilizadores.obter_referencia_cartao(
+                    utilizador_id
+                )
                 aceite = bool(dados)
-                detalhe = dados if aceite else "cartão associado inexistente"
+                detalhe = (
+                    dados
+                    if aceite
+                    else "cartão associado inexistente"
+                )
+
             elif meio == "MBWAY":
                 aceite = bool(mbway_numero)
-                detalhe = mbway_numero if aceite else "número MB WAY em falta"
+                detalhe = (
+                    mbway_numero
+                    if aceite
+                    else "número MB WAY em falta"
+                )
+
             else:
                 aceite = False
                 detalhe = "meio de pagamento inválido"
 
             estado = "ACEITE" if aceite else "FALHOU"
-            conn.execute(
-                """INSERT INTO cobrancas
-                   (chave_idempotencia, viagem_id, utilizador_id, valor_centimos,
-                    meio, estado, detalhe)
-                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                (
-                    chave_idempotencia,
-                    viagem_id,
-                    utilizador_id,
-                    valor_centimos,
-                    meio,
-                    estado,
-                    detalhe,
-                ),
-            )
-            return {"estado": estado, "detalhe": detalhe}
+
+            if existing:
+                # Retry da mesma cobrança:
+                # mantém a mesma chave e a mesma linha.
+                conn.execute(
+                    """
+                    UPDATE cobrancas
+                    SET estado = ?, detalhe = ?
+                    WHERE chave_idempotencia = ?
+                    """,
+                    (
+                        estado,
+                        detalhe,
+                        chave_idempotencia,
+                    ),
+                )
+            else:
+                conn.execute(
+                    """
+                    INSERT INTO cobrancas
+                    (
+                        chave_idempotencia,
+                        viagem_id,
+                        utilizador_id,
+                        valor_centimos,
+                        meio,
+                        estado,
+                        detalhe
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        chave_idempotencia,
+                        viagem_id,
+                        utilizador_id,
+                        valor_centimos,
+                        meio,
+                        estado,
+                        detalhe,
+                    ),
+                )
+
+            return {
+                "estado": estado,
+                "detalhe": detalhe,
+            }

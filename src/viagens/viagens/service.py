@@ -270,6 +270,25 @@ class ViagensService:
                 (resultado["estado"], utilizacao_id),
             )
 
+    def reprocessar_conclusao(self, utilizacao_id: str) -> dict:
+        """
+        Repete tarifação/cobrança de uma viagem já TERMINADA
+        sem reprocessar o evento físico de devolução.
+        """
+        viagem = self.obter_por_utilizacao(utilizacao_id)
+
+        if not viagem:
+            raise ViagemNaoEncontrada(utilizacao_id)
+
+        if viagem["estado"] != "TERMINADA":
+            raise ValueError(
+                "só é possível reprocessar uma viagem TERMINADA"
+            )
+
+        self._tarifar_e_cobrar(utilizacao_id)
+
+        return self.obter_por_utilizacao(utilizacao_id)
+
     def obter_por_utilizacao(self, utilizacao_id: str) -> dict | None:
         with closing(self._connect()) as conn, conn:
             row = conn.execute(

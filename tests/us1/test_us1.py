@@ -134,3 +134,46 @@ def test_evento_repetido_nao_duplica_efeito(tmp_path):
     assert first["duplicado"] is False
     assert second["duplicado"] is True
     assert a["viagens"].obter_por_utilizacao(r["utilizacao_id"])["inicio_fisico"] == t0.isoformat()
+
+def test_retry_conclusao_nao_reprocessa_evento(tmp_path):
+    a = app(tmp_path, preco=175)
+
+    t0 = datetime(
+        2026, 1, 1, 8, 0,
+        tzinfo=timezone.utc,
+    )
+
+    # MB WAY sem número -> cobrança falha.
+    r = iniciar(
+        a,
+        t0,
+        meio="MBWAY",
+        mbway=None,
+    )
+
+    a["docas"].retirada_fisica(
+        "d1",
+        instante=t0,
+    )
+
+    a["docas"].encaixe_fisico(
+        doca_id="d2",
+        bicicleta_id="b1",
+        utilizacao_id=r["utilizacao_id"],
+        instante=t0 + timedelta(minutes=50),
+    )
+
+    v = a["viagens"].obter_por_utilizacao(
+        r["utilizacao_id"]
+    )
+
+    assert v["estado"] == "TERMINADA"
+    assert v["estado_cobranca"] == "FALHOU"
+
+    # Retry sem reprocessar o evento ENCAIXE.
+    v = a["viagens"].reprocessar_conclusao(
+        r["utilizacao_id"]
+    )
+
+    assert v["estado"] == "TERMINADA"
+    assert v["estado_cobranca"] == "FALHOU"

@@ -1,11 +1,8 @@
-from builtins import Exception, print, str
 import json
 import sqlite3
 import contextlib
 from datetime import datetime, timedelta, timezone
 from typing import Callable, Dict, Any
-
-from narwhals import len
 
 from bootstrap import criar_aplicacao
 from src.estacoes.comunicacao_docas.service import ResultadoDestrancamento
