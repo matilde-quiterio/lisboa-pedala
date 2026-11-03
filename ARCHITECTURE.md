@@ -200,6 +200,9 @@ Reportes manuais ou avarias provenientes da Telemetria criam ordens pendentes de
 
 O técnico avalia a necessidade de intervenção e `Manutenção` guarda a avaliação, intervenção quando aplicável e resultado final.
 
+Cada ordem começa em `PENDENTE_AVALIACAO`. Se não for necessária intervenção, `Manutenção` regista a avaliação e o resultado, e fecha a ordem em
+`SEM_INTERVENCAO_NECESSARIA`. Se for necessária, a ordem passa a `EM_INTERVENCAO`; após a intervenção, esta e o resultado são registados e a ordem passa a `CONCLUIDA`. Este workflow não usa o estado `CANCELADA`.
+
 ### Seleção do meio de pagamento
 
 O utilizador pode escolher cartão associado ou MB WAY.

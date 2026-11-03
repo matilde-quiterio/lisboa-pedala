@@ -53,12 +53,19 @@ bicicleta elétrica envia telemetria
 
 ### Workflow 4 — Tratar manutenção
 
-receber reporte manual de avaria ou avaria identificada pela telemetria
-→ abrir ordem de manutenção pendente de avaliação
-→ disponibilizar ordem ao técnico
-→ técnico avalia a necessidade de intervenção
-→ realizar e registar a intervenção, se necessária
-→ fechar ordem e registar o resultado
+receber reporte manual de avaria ou avaria identificada pela Telemetria
+→ abrir ordem de manutenção no estado `PENDENTE_AVALIACAO`
+→ disponibilizar a ordem ao técnico
+→ técnico avalia e regista a necessidade de intervenção
+
+Se não for necessária intervenção:
+→ registar o resultado da avaliação
+→ fechar a ordem no estado `SEM_INTERVENCAO_NECESSARIA`
+
+Se for necessária intervenção:
+→ passar a ordem para o estado `EM_INTERVENCAO`
+→ realizar e registar a intervenção
+→ fechar a ordem no estado `CONCLUIDA` e registar o resultado
 
 ### Workflow 5 — Consultar estado das estações
 
@@ -293,6 +300,10 @@ Foi por isso clarificado que as regras `allowed-to-use` também se aplicam aos m
 Os contratos devem evitar reutilizar tipos internos quando isso introduzir uma dependência não permitida.
 
 Esta alteração não modifica os componentes nem as dependências definidas anteriormente; apenas torna as regras existentes mais explícitas e verificáveis.
+
+### Quinta iteração — Ciclo de vida das ordens de manutenção
+
+A implementação gerada usava `CANCELADA` quando não era necessária intervenção, embora essa regra não estivesse definida. O grupo clarificou que a ordem passa a `SEM_INTERVENCAO_NECESSARIA` ou, se exigir reparação, a `EM_INTERVENCAO` e depois `CONCLUIDA`.
 
 ## 10. Lei de Deméter
 
