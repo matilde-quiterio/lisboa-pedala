@@ -1,5 +1,6 @@
 import sqlite3
 import uuid
+from contextlib import closing
 
 
 class ConflitoViagemAtiva(Exception):
@@ -22,7 +23,7 @@ class ViagensService:
         return conn
 
     def init_schema(self) -> None:
-        with self._connect() as conn:
+        with closing(self._connect()) as conn, conn:
             conn.executescript("""
                 CREATE TABLE IF NOT EXISTS viagens (
                     id TEXT PRIMARY KEY,
@@ -116,7 +117,7 @@ class ViagensService:
             conn.close()
 
     def cancelar_pendente(self, utilizacao_id: str) -> bool:
-        with self._connect() as conn:
+        with closing(self._connect()) as conn, conn:
             cur = conn.execute(
                 """UPDATE viagens SET estado = 'CANCELADA'
                    WHERE utilizacao_id = ? AND estado = 'PENDENTE'""",
@@ -230,7 +231,7 @@ class ViagensService:
         return {"duplicado": False, "fechou": fechou}
 
     def _tarifar_e_cobrar(self, utilizacao_id: str) -> None:
-        with self._connect() as conn:
+        with closing(self._connect()) as conn, conn:
             viagem = conn.execute(
                 "SELECT * FROM viagens WHERE utilizacao_id = ?", (utilizacao_id,)
             ).fetchone()
@@ -245,7 +246,7 @@ class ViagensService:
                 viagem["inicio_fisico"],
                 viagem["fim_fisico"],
             )
-            with self._connect() as conn:
+            with closing(self._connect()) as conn, conn:
                 conn.execute(
                     """UPDATE viagens SET tarifa_centimos = ?
                        WHERE utilizacao_id = ? AND tarifa_centimos IS NULL""",
@@ -263,14 +264,14 @@ class ViagensService:
             meio=viagem["meio_pagamento"],
             mbway_numero=viagem["mbway_numero"],
         )
-        with self._connect() as conn:
+        with closing(self._connect()) as conn, conn:
             conn.execute(
                 "UPDATE viagens SET estado_cobranca = ? WHERE utilizacao_id = ?",
                 (resultado["estado"], utilizacao_id),
             )
 
     def obter_por_utilizacao(self, utilizacao_id: str) -> dict | None:
-        with self._connect() as conn:
+        with closing(self._connect()) as conn, conn:
             row = conn.execute(
                 "SELECT * FROM viagens WHERE utilizacao_id = ?", (utilizacao_id,)
             ).fetchone()

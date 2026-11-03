@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from contextlib import closing
 import sqlite3
 import uuid
 
@@ -34,7 +35,7 @@ class ComunicacaoDocasService:
         return conn
 
     def init_schema(self) -> None:
-        with self._connect() as conn:
+        with closing(self._connect()) as conn, conn:
             conn.executescript("""
                 CREATE TABLE IF NOT EXISTS estado_docas_simuladas (
                     doca_id TEXT PRIMARY KEY,
@@ -58,7 +59,7 @@ class ComunicacaoDocasService:
             """)
 
     def registar_doca(self, doca_id: str, bicicleta_id: str | None = None) -> None:
-        with self._connect() as conn:
+        with closing(self._connect()) as conn, conn:
             conn.execute(
                 """INSERT OR REPLACE INTO estado_docas_simuladas
                    (doca_id, online, bicicleta_id, utilizacao_id, destrancada, retirada, deadline_retirada)
@@ -67,7 +68,7 @@ class ComunicacaoDocasService:
             )
 
     def definir_online(self, doca_id: str, online: bool, *, agora: datetime | None = None) -> None:
-        with self._connect() as conn:
+        with closing(self._connect()) as conn, conn:
             conn.execute(
                 "UPDATE estado_docas_simuladas SET online = ? WHERE doca_id = ?",
                 (int(online), doca_id),
@@ -86,7 +87,7 @@ class ComunicacaoDocasService:
         agora: datetime | None = None,
     ) -> str:
         agora = agora or datetime.now(timezone.utc)
-        with self._connect() as conn:
+        with closing(self._connect()) as conn, conn:
             row = conn.execute(
                 "SELECT * FROM estado_docas_simuladas WHERE doca_id = ?", (doca_id,)
             ).fetchone()
@@ -116,7 +117,7 @@ class ComunicacaoDocasService:
         self, doca_id: str, *, instante: datetime | None = None
     ) -> str:
         instante = instante or datetime.now(timezone.utc)
-        with self._connect() as conn:
+        with closing(self._connect()) as conn, conn:
             row = conn.execute(
                 "SELECT * FROM estado_docas_simuladas WHERE doca_id = ?", (doca_id,)
             ).fetchone()
@@ -141,7 +142,7 @@ class ComunicacaoDocasService:
         instante: datetime | None = None,
     ) -> str:
         instante = instante or datetime.now(timezone.utc)
-        with self._connect() as conn:
+        with closing(self._connect()) as conn, conn:
             row = conn.execute(
                 "SELECT * FROM estado_docas_simuladas WHERE doca_id = ?", (doca_id,)
             ).fetchone()
@@ -169,7 +170,7 @@ class ComunicacaoDocasService:
         """Relógio local da simulação: rebloqueia deadlines expirados mesmo offline."""
         agora = agora or datetime.now(timezone.utc)
         eventos = []
-        with self._connect() as conn:
+        with closing(self._connect()) as conn, conn:
             rows = conn.execute(
                 """SELECT * FROM estado_docas_simuladas
                    WHERE destrancada = 1 AND retirada = 0 AND deadline_retirada IS NOT NULL"""
@@ -193,7 +194,7 @@ class ComunicacaoDocasService:
         agora = agora or datetime.now(timezone.utc)
         cutoff = (agora - self.RETENCAO_EVENTOS).isoformat()
         enviados = 0
-        with self._connect() as conn:
+        with closing(self._connect()) as conn, conn:
             expirado = conn.execute(
                 """SELECT evento_id FROM buffer_eventos_doca
                    WHERE doca_id = ? AND guardado_em < ? LIMIT 1""",
@@ -215,7 +216,7 @@ class ComunicacaoDocasService:
             except Exception:
                 break
             else:
-                with self._connect() as conn:
+                with closing(self._connect()) as conn, conn:
                     conn.execute(
                         "DELETE FROM buffer_eventos_doca WHERE evento_id = ?",
                         (row["evento_id"],),
@@ -224,7 +225,7 @@ class ComunicacaoDocasService:
         return enviados
 
     def reenviar_evento_duplicado(self, evento_id: str) -> None:
-        with self._connect() as conn:
+        with closing(self._connect()) as conn, conn:
             row = conn.execute(
                 "SELECT * FROM buffer_eventos_doca WHERE evento_id = ?", (evento_id,)
             ).fetchone()
@@ -242,7 +243,7 @@ class ComunicacaoDocasService:
         }
 
     def _entregar_ou_guardar(self, evento: dict, guardado_em: datetime | None = None) -> None:
-        with self._connect() as conn:
+        with closing(self._connect()) as conn, conn:
             row = conn.execute(
                 "SELECT online FROM estado_docas_simuladas WHERE doca_id = ?",
                 (evento["doca_id"],),
@@ -256,7 +257,7 @@ class ComunicacaoDocasService:
         self._guardar(evento, guardado_em or datetime.now(timezone.utc))
 
     def _guardar(self, evento: dict, guardado_em: datetime) -> None:
-        with self._connect() as conn:
+        with closing(self._connect()) as conn, conn:
             conn.execute(
                 """INSERT OR IGNORE INTO buffer_eventos_doca
                    (evento_id, utilizacao_id, tipo, bicicleta_id, doca_id,
